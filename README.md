@@ -1,10 +1,14 @@
-# Employee Benefits Platform
+<p align="center">
+  <img src=".github/banner.svg" alt="Employee Benefits Platform" width="100%"/>
+</p>
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Java](https://img.shields.io/badge/Java-17%2B-orange.svg)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.6-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"/></a>
+  <a href="https://openjdk.org/"><img src="https://img.shields.io/badge/Java-17%2B-orange.svg" alt="Java"/></a>
+  <a href="https://spring.io/projects/spring-boot"><img src="https://img.shields.io/badge/Spring%20Boot-3.3.6-brightgreen.svg" alt="Spring Boot"/></a>
+  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16-black.svg" alt="Next.js"/></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11%2B-blue.svg" alt="Python"/></a>
+</p>
 
 A cloud-native platform for processing employee benefit enrollments, built with Spring Boot microservices, an event-driven architecture, and an AI-powered chatbot. The system accepts enrollment requests, persists them durably, and drives downstream processing through an outbox/inbox messaging pattern — designed to evolve toward AWS EventBridge, SQS, and saga orchestration without breaking the external API.
 
