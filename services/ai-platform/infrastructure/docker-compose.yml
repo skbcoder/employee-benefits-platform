@@ -1,0 +1,60 @@
+version: '3.8'
+
+# AI Platform Docker Compose
+# Requires the root infrastructure/docker-compose.yml PostgreSQL to be running.
+# Run from the ai-platform directory:
+#   docker compose -f infrastructure/docker-compose.yml up
+
+services:
+
+  mcp-server:
+    build:
+      context: ../mcp-server
+      dockerfile: Dockerfile
+    ports:
+      - "${MCP_SERVER_PORT:-8100}:8100"
+    environment:
+      ENROLLMENT_SERVICE_URL: ${ENROLLMENT_SERVICE_URL:-http://host.docker.internal:8080}
+      PROCESSING_SERVICE_URL: ${PROCESSING_SERVICE_URL:-http://host.docker.internal:8081}
+      MCP_SERVER_PORT: 8100
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  ai-gateway:
+    build:
+      context: ../ai-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "${AI_GATEWAY_PORT:-8200}:8200"
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL:-llama3.1:8b}
+      MCP_SERVER_URL: http://mcp-server:8100
+      KNOWLEDGE_SERVICE_URL: http://knowledge-service:8300
+      AI_GATEWAY_PORT: 8200
+    depends_on:
+      - mcp-server
+      - knowledge-service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  knowledge-service:
+    build:
+      context: ../knowledge-service
+      dockerfile: Dockerfile
+    ports:
+      - "${KNOWLEDGE_SERVICE_PORT:-8300}:8300"
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      DB_HOST: ${DB_HOST:-host.docker.internal}
+      DB_PORT: ${DB_PORT:-5433}
+      DB_NAME: ${DB_NAME:-employee_benefits_platform}
+      DB_USERNAME: ${DB_USERNAME:-benefits_app}
+      DB_PASSWORD: ${DB_PASSWORD:-benefits_app}
+      KNOWLEDGE_SERVICE_PORT: 8300
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

@@ -1,0 +1,36 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: enrollment-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT}/${DB_NAME:employee_benefits_platform}
+    username: ${DB_USERNAME:benefits_app}
+    password: ${DB_PASSWORD:benefits_app}
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  publisher:
+    transport: ${PUBLISHER_TRANSPORT:http}
+    http:
+      processing-service-url: ${PROCESSING_SERVICE_URL:http://localhost:8081}
+  outbox:
+    fixed-delay-ms: ${OUTBOX_FIXED_DELAY_MS:2000}
+    retry-delay-ms: ${OUTBOX_RETRY_DELAY_MS:5000}
+    claim-ttl-ms: ${OUTBOX_CLAIM_TTL_MS:15000}
+    batch-size: ${OUTBOX_BATCH_SIZE:10}

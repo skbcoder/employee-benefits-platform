@@ -1,0 +1,26 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: processing-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT}/${DB_NAME:employee_benefits_platform}
+    username: ${DB_USERNAME:benefits_app}
+    password: ${DB_PASSWORD:benefits_app}
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  callback:
+    enrollment-service-url: ${ENROLLMENT_SERVICE_URL:http://localhost:8080}

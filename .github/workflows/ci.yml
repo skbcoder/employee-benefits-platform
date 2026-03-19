@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Java Backend ────────────────────────────────────────────────────
+  java-build:
+    name: Java Build & Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: employee_benefits_platform
+          POSTGRES_USER: benefits_app
+          POSTGRES_PASSWORD: benefits_app
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U benefits_app -d employee_benefits_platform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build & Test
+        run: ./mvnw clean verify -B
+        env:
+          DB_PORT: 5433
+
+  # ── Frontend ────────────────────────────────────────────────────────
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  # ── Docker Build Verification ───────────────────────────────────────
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: enrollment-service
+            dockerfile: services/enrollment-service/Dockerfile
+          - name: processing-service
+            dockerfile: services/processing-service/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.service.name }}
+        run: |
+          docker build -f ${{ matrix.service.dockerfile }} -t ${{ matrix.service.name }}:ci .
