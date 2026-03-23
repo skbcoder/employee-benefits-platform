@@ -1,0 +1,58 @@
+policies:
+  # ─── Enrollment Actions ────────────────────────────────────────────
+  - id: enrollment_submit_pii_check
+    description: "Enrollment submissions must include valid employee data"
+    trigger:
+      agent: enrollment
+      action: submit_enrollment
+    conditions:
+      - field: employeeEmail
+        operator: matches_pattern
+        value: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+    effect: allow
+
+  - id: enrollment_bulk_submit_review
+    description: "Enrollments with more than 3 benefit selections require human review"
+    trigger:
+      agent: enrollment
+      action: submit_enrollment
+    conditions:
+      - field: selections
+        operator: count_gt
+        value: 3
+    effect: require_approval
+
+  # ─── Data Access Policies ──────────────────────────────────────────
+  - id: no_ssn_in_response
+    description: "SSN patterns must never appear in agent responses"
+    trigger:
+      agent: "*"
+      action: respond
+    conditions:
+      - field: response
+        operator: matches_pattern
+        value: "\\d{3}-\\d{2}-\\d{4}"
+    effect: redact
+
+  - id: no_email_in_response
+    description: "Email addresses must be redacted from agent responses"
+    trigger:
+      agent: "*"
+      action: respond
+    conditions:
+      - field: response
+        operator: matches_pattern
+        value: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+    effect: redact
+
+  # ─── Rate / Abuse Policies ─────────────────────────────────────────
+  - id: no_harmful_content
+    description: "Block any agent response containing harmful content indicators"
+    trigger:
+      agent: "*"
+      action: respond
+    conditions:
+      - field: response
+        operator: contains
+        value: "[HARMFUL]"
+    effect: deny
