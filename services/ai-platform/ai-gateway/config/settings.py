@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     # Knowledge Service
     knowledge_service_url: str = "http://localhost:8300"
 
+    # Orchestrator (Phase 2 — multi-agent LangGraph)
+    orchestrator_url: str = "http://localhost:8400"
+    use_orchestrator: bool = True  # delegate to orchestrator when available
+
     # Gateway
     ai_gateway_port: int = 8200
     ai_gateway_host: str = "0.0.0.0"

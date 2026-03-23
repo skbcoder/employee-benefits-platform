@@ -17,6 +17,7 @@ from src.models.conversation import (
 from src.services.agent_loop import run_agent_loop, get_rag_context
 from src.services.audit import log_event
 from src.services.guardrails import check_input, check_output
+from src.services.orchestrator_client import orchestrate as orchestrator_call
 from src.services.rate_limiter import RateLimiter
 
 router = APIRouter(prefix="/api/ai", tags=["chat"])
@@ -85,9 +86,6 @@ async def chat(request: ChatRequest, raw_request: Request):
             tool_calls_made=[],
         )
 
-    # ── RAG context ─────────────────────────────────────────────────
-    rag_context = await get_rag_context(request.message)
-
     # ── Conversation history ────────────────────────────────────────
     history = [
         {"role": msg.role.value, "content": msg.content}
@@ -95,12 +93,27 @@ async def chat(request: ChatRequest, raw_request: Request):
         if msg.role in (MessageRole.USER, MessageRole.ASSISTANT)
     ]
 
-    # ── Agent loop ──────────────────────────────────────────────────
-    response_text, tool_calls = await run_agent_loop(
-        messages=history,
-        user_message=request.message,
-        rag_context=rag_context,
-    )
+    # ── Orchestrator (Phase 2) or local agent loop ───────────────
+    response_text = None
+    tool_calls = []
+
+    if settings.use_orchestrator:
+        result = await orchestrator_call(
+            message=request.message,
+            conversation_id=conv_id,
+            history=history,
+        )
+        if result is not None:
+            response_text, tool_calls = result
+
+    # Fallback to local agent loop if orchestrator unavailable
+    if response_text is None:
+        rag_context = await get_rag_context(request.message)
+        response_text, tool_calls = await run_agent_loop(
+            messages=history,
+            user_message=request.message,
+            rag_context=rag_context,
+        )
 
     # ── Output filtering ────────────────────────────────────────────
     filtered_response = check_output(response_text)
