@@ -1,0 +1,130 @@
+- id: enroll-happy-path-medical
+  input: "I want to enroll in the Gold medical plan. My employee ID is E12345 and my name is Jane Doe."
+  expected_agent: enrollment
+  expected_tools:
+    - submit_enrollment
+  expected_behavior: "Should submit a new enrollment with medical Gold plan for employee E12345"
+  tags: [enrollment, happy-path, medical]
+  expected_blocked: false
+
+- id: enroll-happy-path-dental
+  input: "Please sign me up for the Premium dental plan. Employee ID E67890, name John Smith."
+  expected_agent: enrollment
+  expected_tools:
+    - submit_enrollment
+  expected_behavior: "Should submit a new enrollment with dental Premium plan for employee E67890"
+  tags: [enrollment, happy-path, dental]
+  expected_blocked: false
+
+- id: enroll-happy-path-vision
+  input: "I'd like to enroll in the Basic vision plan. I'm employee E11111, Sarah Johnson."
+  expected_agent: enrollment
+  expected_tools:
+    - submit_enrollment
+  expected_behavior: "Should submit a new enrollment with vision Basic plan for employee E11111"
+  tags: [enrollment, happy-path, vision]
+  expected_blocked: false
+
+- id: enroll-missing-employee-id
+  input: "I want to enroll in the Gold medical plan. My name is Jane Doe."
+  expected_agent: enrollment
+  expected_tools: []
+  expected_behavior: "Should ask for the employee ID before submitting enrollment"
+  tags: [enrollment, missing-fields, validation]
+  expected_blocked: false
+
+- id: enroll-missing-plan
+  input: "I want to enroll in benefits. My employee ID is E12345."
+  expected_agent: enrollment
+  expected_tools: []
+  expected_behavior: "Should ask which plan type and specific plan the employee wants"
+  tags: [enrollment, missing-fields, validation]
+  expected_blocked: false
+
+- id: enroll-missing-name
+  input: "Sign me up for the Silver medical plan. Employee ID E22222."
+  expected_agent: enrollment
+  expected_tools: []
+  expected_behavior: "Should ask for the employee name before submitting"
+  tags: [enrollment, missing-fields, validation]
+  expected_blocked: false
+
+- id: enroll-status-by-id
+  input: "What is the status of my enrollment? My employee ID is E12345."
+  expected_agent: enrollment
+  expected_tools:
+    - check_enrollment_status
+  expected_behavior: "Should look up enrollment status for employee E12345"
+  tags: [enrollment, status, lookup]
+  expected_blocked: false
+
+- id: enroll-status-by-name
+  input: "Can you check the enrollment status for Jane Doe?"
+  expected_agent: enrollment
+  expected_tools:
+    - check_enrollment_status
+  expected_behavior: "Should look up enrollment status by employee name Jane Doe"
+  tags: [enrollment, status, lookup]
+  expected_blocked: false
+
+- id: enroll-list-by-status
+  input: "Show me all enrollments that are currently processing."
+  expected_agent: enrollment
+  expected_tools:
+    - list_enrollments
+  expected_behavior: "Should list all enrollments with PROCESSING status"
+  tags: [enrollment, list, filter]
+  expected_blocked: false
+
+- id: enroll-list-completed
+  input: "Which enrollments have been completed?"
+  expected_agent: enrollment
+  expected_tools:
+    - list_enrollments
+  expected_behavior: "Should list all enrollments with COMPLETED status"
+  tags: [enrollment, list, filter]
+  expected_blocked: false
+
+- id: enroll-multi-plan
+  input: "I want to enroll in both the Gold medical plan and Premium dental. Employee ID E33333, name Alex Turner."
+  expected_agent: enrollment
+  expected_tools:
+    - submit_enrollment
+  expected_behavior: "Should submit enrollment with multiple benefit selections (medical and dental)"
+  tags: [enrollment, happy-path, multi-plan]
+  expected_blocked: false
+
+- id: enroll-ambiguous-plan
+  input: "I want the best health insurance you have."
+  expected_agent: enrollment
+  expected_tools: []
+  expected_behavior: "Should clarify which specific plan type and tier the employee wants"
+  tags: [enrollment, ambiguous, clarification]
+  expected_blocked: false
+
+- id: enroll-ambiguous-intent
+  input: "Tell me about enrolling."
+  expected_agent: knowledge
+  expected_tools: []
+  expected_behavior: "Should provide general information about the enrollment process"
+  tags: [enrollment, ambiguous, info]
+  expected_blocked: false
+
+- id: enroll-cancel-request
+  input: "I want to cancel my enrollment. Employee ID E12345."
+  expected_agent: enrollment
+  expected_tools:
+    - check_enrollment_status
+  expected_behavior: "Should check enrollment status and explain cancellation options or limitations"
+  tags: [enrollment, cancel, edge-case]
+  expected_blocked: false
+
+- id: enroll-duplicate-check
+  input: "I already enrolled but want to enroll again with a different plan. Employee E12345, Jane Doe, Silver medical."
+  expected_agent: enrollment
+  expected_tools:
+    - check_enrollment_status
+    - submit_enrollment
+  expected_behavior: "Should check existing enrollment status and handle re-enrollment appropriately"
+  tags: [enrollment, duplicate, edge-case]
+  expected_blocked: false

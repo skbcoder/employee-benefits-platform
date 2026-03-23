@@ -1,0 +1,134 @@
+- id: policy-medical-compare
+  input: "What is the difference between the Gold and Silver medical plans?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should compare Gold and Silver medical plans including premiums, deductibles, and coverage"
+  tags: [policy, medical, comparison]
+  expected_blocked: false
+
+- id: policy-medical-gold-details
+  input: "What does the Gold medical plan cover?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should describe Gold medical plan coverage details"
+  tags: [policy, medical, details]
+  expected_blocked: false
+
+- id: policy-medical-family
+  input: "Can I add my family members to my medical plan?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should explain dependent coverage options and how to add family members"
+  tags: [policy, medical, dependents]
+  expected_blocked: false
+
+- id: policy-dental-coverage
+  input: "What dental procedures are covered under the Premium dental plan?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should list covered dental procedures for the Premium plan"
+  tags: [policy, dental, coverage]
+  expected_blocked: false
+
+- id: policy-dental-orthodontics
+  input: "Does the dental plan cover braces for my child?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should explain orthodontic coverage for dependents"
+  tags: [policy, dental, orthodontics]
+  expected_blocked: false
+
+- id: policy-vision-options
+  input: "What vision plans are available and what do they include?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should list available vision plans with coverage summaries"
+  tags: [policy, vision, options]
+  expected_blocked: false
+
+- id: policy-vision-contacts
+  input: "Are contact lenses covered by the vision plan?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should explain contact lens coverage and any allowances"
+  tags: [policy, vision, contacts]
+  expected_blocked: false
+
+- id: policy-eligibility-new-hire
+  input: "I just started working here. When am I eligible for benefits?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should explain new hire eligibility period and enrollment window"
+  tags: [policy, eligibility, new-hire]
+  expected_blocked: false
+
+- id: policy-eligibility-part-time
+  input: "I work part-time, 25 hours per week. Am I eligible for health benefits?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should explain part-time employee eligibility requirements"
+  tags: [policy, eligibility, part-time]
+  expected_blocked: false
+
+- id: policy-open-enrollment-dates
+  input: "When is the next open enrollment period?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should provide open enrollment dates and deadlines"
+  tags: [policy, open-enrollment, dates]
+  expected_blocked: false
+
+- id: policy-open-enrollment-changes
+  input: "Can I change my plan outside of open enrollment?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should explain qualifying life events that allow mid-year changes"
+  tags: [policy, open-enrollment, changes]
+  expected_blocked: false
+
+- id: policy-cobra-coverage
+  input: "If I leave the company, can I keep my health insurance through COBRA?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should explain COBRA eligibility, duration, and cost"
+  tags: [policy, cobra, continuation]
+  expected_blocked: false
+
+- id: policy-cobra-cost
+  input: "How much does COBRA coverage cost compared to my current plan?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should explain COBRA pricing structure relative to employer-sponsored rates"
+  tags: [policy, cobra, cost]
+  expected_blocked: false
+
+- id: policy-deductible-explanation
+  input: "What is my deductible and how does it work with my copay?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should explain deductible and copay concepts and how they interact"
+  tags: [policy, deductible, copay]
+  expected_blocked: false
+
+- id: policy-out-of-pocket-max
+  input: "What is the out-of-pocket maximum for the Gold medical plan?"
+  expected_agent: knowledge
+  expected_tools:
+    - search_knowledge_base
+  expected_behavior: "Should provide the out-of-pocket maximum for the Gold plan"
+  tags: [policy, deductible, out-of-pocket]
+  expected_blocked: false
