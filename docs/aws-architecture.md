@@ -16,6 +16,10 @@ This document describes the target AWS architecture for the Employee Benefits Pl
 | MCP Server | ECS Fargate | SSE transport, internal only |
 | Ollama (local LLM) | Amazon Bedrock | Managed LLM, no GPU infrastructure |
 | Next.js Frontend | AWS Amplify | CDN-backed, auto-deploy from Git |
+| Orchestrator (local :8400) | ECS Fargate | LangGraph engine, Bedrock provider |
+| Governance Service (local :8500) | ECS Fargate | Audit trail in RDS, policy rules in config |
+| Evaluation Service (local :8600) | ECS Fargate | Test results in S3 |
+| Prometheus + Grafana | CloudWatch Metrics + Dashboards | Native AWS observability |
 | Flyway migrations | Same (runs on ECS task startup) | Connects to RDS |
 | audit.log (file) | CloudWatch Logs | Structured JSON via awslogs driver |
 | Rate limiter (in-memory) | API Gateway throttling + WAF | Distributed rate limiting |
@@ -209,7 +213,11 @@ flowchart TB
 | SQS + EventBridge | ~$1 |
 | ECR | ~$1 |
 | Bedrock (Claude Haiku, light usage) | ~$10 |
-| **Total** | **~$190/month** |
+| Orchestrator (Fargate) | ~$15 |
+| Governance (Fargate) | ~$15 |
+| Evaluation (Fargate) | ~$10 |
+| CloudWatch (logs, metrics, dashboards) | ~$25 |
+| **Total** | **~$255/month** |
 
 ## Deployment Strategy
 

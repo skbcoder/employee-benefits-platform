@@ -263,6 +263,29 @@ curl http://localhost:8300/api/knowledge/health   # Knowledge Service
 | AI Gateway | 8200 | http://localhost:8200/docs |
 | Knowledge Service | 8300 | http://localhost:8300/docs |
 
+### Monitoring Stack
+
+```bash
+# Start Prometheus + Grafana (requires Docker)
+docker compose -f infrastructure/docker-compose.yml up -d prometheus grafana
+
+# Prometheus: http://localhost:9090
+# Grafana: http://localhost:3001 (admin/benefits)
+# Also embedded in the UI at: Governance → Usage & Cost tab
+```
+
+### Phase 2 Services
+
+```bash
+curl http://localhost:8400/health            # Orchestrator
+curl http://localhost:8500/health            # Governance Service
+curl http://localhost:8600/health            # Evaluation Service
+curl http://localhost:9090/-/healthy         # Prometheus
+curl http://localhost:3001/api/health        # Grafana
+curl http://localhost:8080/actuator/prometheus  # Enrollment Prometheus metrics
+curl http://localhost:8081/actuator/prometheus  # Processing Prometheus metrics
+```
+
 ## 4. Stopping and cleaning up
 
 Stop the Processing Service:
@@ -400,3 +423,19 @@ Expected versions:
 - `1` — create platform schemas
 - `2` — harden outbox dispatch
 - `3` — add employee name support
+
+### Phase 2 Troubleshooting
+
+**Orchestrator returns "I apologize" for every query**
+- Check Ollama is running: `curl http://localhost:11434/api/tags`
+- Check Knowledge Service is up: `curl http://localhost:8300/health`
+- The orchestrator needs both to function properly
+
+**Grafana shows "Not Running" in the UI**
+- Start the monitoring stack: `docker compose -f infrastructure/docker-compose.yml up -d prometheus grafana`
+- Grafana is proxied through Next.js at `/grafana/` — ensure the frontend is running
+
+**Prometheus targets show "down"**
+- Verify the service is running on the expected port
+- Java services need `micrometer-registry-prometheus` dependency and `/actuator/prometheus` exposed
+- AI services need the observability module imported (prometheus_client package)

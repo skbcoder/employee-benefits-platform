@@ -240,3 +240,24 @@ This enables monitoring of refinement frequency and effectiveness over time.
 |------|-------------|
 | `services/ai-platform/ai-gateway/src/services/agent_loop.py` | Added `_score_response()`, `_build_enrichment_query()`, `_refine_response()`, contextual re-query logic, quality gates in both knowledge and tool paths |
 | `services/ai-platform/ai-gateway/config/settings.py` | Added `enable_refinement`, `refinement_min_length`, `refinement_max_passes` |
+
+## Phase 2: Enhanced Quality Pipeline
+
+The loopback refinement mechanism is now part of a larger quality pipeline:
+
+### Multi-Agent Orchestration
+- The Orchestrator's **Synthesis Node** applies refinement after agent execution
+- Markdown table repair: fixes missing GFM separator rows, removes code fences, strips extra separators
+- Output sanitization: UUID stripping, PII redaction, internal term removal
+
+### Evaluation Framework Integration
+- **6 evaluators** score responses against golden datasets:
+  - Accuracy (correct agent + tools), Relevance (LLM-as-judge), Safety (guardrail bypass)
+  - Latency (threshold-based), Cost (token budget), Faithfulness (RAG grounding)
+- **45 golden test cases** provide regression testing for refinement quality
+- A/B testing compares refinement effectiveness between model versions
+
+### Observability
+- `response_refined` audit events track refinement triggers, score improvements, and token costs
+- Prometheus metrics: `agent_request_duration_seconds` includes refinement time
+- Cost tracker attributes refinement LLM calls to the request budget

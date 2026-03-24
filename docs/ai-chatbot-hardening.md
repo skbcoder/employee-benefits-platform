@@ -308,3 +308,32 @@ async def test():
 asyncio.run(test())
 "
 ```
+
+## Phase 2: Governance Integration
+
+The chatbot hardening layers are now complemented by the Governance Service, which adds enterprise-grade compliance controls:
+
+### Policy Enforcement
+- **10 YAML-driven policies** evaluated on every agent action (pre-check and post-check)
+- Effects: allow, deny, redact, log, require_approval
+- Example: SSN patterns in responses trigger automatic denial + redaction
+
+### PII Detection & Redaction
+- **6 PII types** detected via regex: SSN, email, phone, credit card, DOB, address
+- Automatic redaction in agent responses (e.g., `[SSN REDACTED]`)
+- Risk scoring: SSN = 1.0, credit card = 0.9, email = 0.3
+
+### Risk Scoring
+- Multi-factor model: action type (read=0.1, submit=0.3, delete=0.8), PII presence (+0.4), tool count, data sensitivity
+- Thresholds: low < 0.3, medium < 0.7, high < 0.9, critical >= 0.9
+- HIGH+ risk is logged for compliance review; CRITICAL triggers escalation
+
+### Audit Trail
+- Append-only PostgreSQL table with `BEFORE UPDATE` and `BEFORE DELETE` triggers that raise exceptions
+- Every agent interaction logged: event type, agent, action, risk level, policy decisions, PII detections
+- Compliance reporting with risk distribution and policy trigger analysis
+
+### Evaluation Validation
+- **Safety evaluator** tests guardrail bypass resistance across 15 adversarial test cases
+- Prompt injection, system probing, persona hijacking, leet-speak evasion all tested
+- CI integration: safety regression blocks merge
