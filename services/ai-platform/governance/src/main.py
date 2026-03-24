@@ -28,9 +28,12 @@ try:
     _spec.loader.exec_module(_mod)
     MetricsMiddleware = _mod.MetricsMiddleware
     metrics_endpoint = _mod.metrics_endpoint
+    _record_governance_decision = _mod.record_governance_decision
+    _record_pii_detection = _mod.record_pii_detection
     _observability_available = True
 except Exception:
-    pass
+    def _record_governance_decision(decision: str) -> None: pass
+    def _record_pii_detection(pii_type: str) -> None: pass
 
 from config.settings import get_settings
 from src.approval.queue import ApprovalQueue
@@ -156,6 +159,7 @@ async def governance_check(request: GovernanceCheckRequest):
     """Evaluate policies and risk before an agent action is executed."""
     # Policy evaluation.
     decision = policy_engine.evaluate(request.agent, request.action, request.context)
+    _record_governance_decision("allowed" if decision.allowed else "denied")
 
     # Risk scoring.
     risk = score_action(request.agent, request.action, request.context)
@@ -206,6 +210,8 @@ async def governance_review(request: ReviewRequest):
     """Review an agent response for PII and policy compliance."""
     # PII detection.
     pii_detections = detect_pii(request.response_text) if settings.pii_detection_enabled else []
+    for _pii in pii_detections:
+        _record_pii_detection(_pii.pii_type.value)
     pii_risk = score_pii_risk(pii_detections)
     redacted = redact_pii(request.response_text) if pii_detections else request.response_text
 

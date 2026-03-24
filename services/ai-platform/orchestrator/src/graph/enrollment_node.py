@@ -13,6 +13,19 @@ from src.models.state import AgentResult, AgentType, ToolCall
 from src.graph.state import AgentState
 from src.providers.provider_factory import get_provider
 
+try:
+    import importlib.util
+    from pathlib import Path as _Path
+    _spec = importlib.util.spec_from_file_location(
+        "obs_metrics",
+        _Path(__file__).parent.parent.parent.parent / "observability" / "src" / "metrics" / "collector.py",
+    )
+    _mod = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    _record_tool_call = _mod.record_tool_call
+except Exception:
+    def _record_tool_call(name: str) -> None: pass
+
 logger = logging.getLogger(__name__)
 
 _ENROLLMENT_SYSTEM_PROMPT = (
@@ -326,6 +339,7 @@ async def enrollment_node(state: AgentState) -> dict[str, Any]:
                     continue
 
             result_text = await _execute_tool(tool_name, tool_args)
+            _record_tool_call(tool_name)
             tool_calls_made.append(ToolCall(
                 tool_name=tool_name,
                 tool_args=tool_args,
