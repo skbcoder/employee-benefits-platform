@@ -92,6 +92,7 @@ module "ecs" {
   ecs_security_group_id = module.networking.ecs_security_group_id
   db_endpoint           = module.database.endpoint
   db_password           = var.db_password
+  db_secret_arn         = module.database.secret_arn
   event_bus_arn         = module.messaging.event_bus_arn
   sqs_queue_arn         = module.messaging.queue_arn
 

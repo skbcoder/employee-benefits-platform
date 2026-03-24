@@ -17,6 +17,27 @@ from src.audit.trail import AuditEntry, AuditTrail
 
 logger = logging.getLogger(__name__)
 
+# Safe export directory — all exports are written here, never arbitrary paths.
+_EXPORT_DIR = Path("/tmp/governance_exports")
+
+
+def _safe_output_path(requested: str, extension: str) -> str:
+    """Return a safe output path within the export directory.
+
+    Prevents path traversal by ignoring the requested path structure
+    and generating a filename within the controlled export directory.
+    """
+    _EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+    # Strip any directory components — only use the filename
+    safe_name = Path(requested).name
+    if not safe_name or safe_name.startswith("."):
+        safe_name = f"audit_export.{extension}"
+    # Ensure correct extension
+    if not safe_name.endswith(f".{extension}"):
+        safe_name = f"{safe_name}.{extension}"
+    return str(_EXPORT_DIR / safe_name)
+
+
 # Fields included in CSV exports.
 _CSV_FIELDS = [
     "id",
@@ -55,12 +76,8 @@ def export_json(
     """
     entries = _filter_entries(trail, start_date, end_date)
     payload = [e.model_dump(mode="json") for e in entries]
+    output_path = _safe_output_path(output_path, "json")
 
-    if output_path.startswith("s3://"):
-        logger.info("S3 export to %s — storing locally as fallback", output_path)
-        output_path = output_path.replace("s3://", "/tmp/s3_fallback_")
-
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w") as fh:
         json.dump(payload, fh, indent=2, default=str)
 
@@ -79,12 +96,8 @@ def export_csv(
     Returns the output path written to.
     """
     entries = _filter_entries(trail, start_date, end_date)
+    output_path = _safe_output_path(output_path, "csv")
 
-    if output_path.startswith("s3://"):
-        logger.info("S3 export to %s — storing locally as fallback", output_path)
-        output_path = output_path.replace("s3://", "/tmp/s3_fallback_")
-
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=_CSV_FIELDS)
         writer.writeheader()

@@ -39,6 +39,11 @@ variable "db_password" {
   sensitive = true
 }
 
+variable "db_secret_arn" {
+  description = "Secrets Manager ARN for the database password"
+  type        = string
+}
+
 variable "event_bus_arn" {
   description = "EventBridge bus ARN for publish permissions"
   type        = string

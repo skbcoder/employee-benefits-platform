@@ -1,18 +1,25 @@
 """Immutable audit trail.
 
-Stores audit entries in an append-only list (in-memory) that mirrors the
-``governance.audit_trail`` PostgreSQL table.  The application layer
-enforces immutability: entries can be appended and queried but never
-modified or deleted.
+WARNING: Currently in-memory only. Audit entries are lost on service restart.
+The PostgreSQL table (governance.audit_trail) exists with append-only triggers
+but is not yet wired. Production deployments MUST integrate database persistence
+before handling real compliance data.
+
+TODO: Replace in-memory list with asyncpg INSERT to governance.audit_trail table.
+The table schema and mutation-prevention triggers are already in place via
+services/ai-platform/governance/migrations/V1__create_governance_schema.sql.
 """
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 
 class AuditEntry(BaseModel):
@@ -41,6 +48,10 @@ class AuditTrail:
 
     def __init__(self) -> None:
         self._entries: list[AuditEntry] = []
+        logger.warning(
+            "Audit trail is in-memory only — entries will be lost on restart. "
+            "Wire database persistence for production use."
+        )
 
     def log_audit(self, entry: AuditEntry) -> AuditEntry:
         """Append an entry to the trail. Returns the stored entry."""

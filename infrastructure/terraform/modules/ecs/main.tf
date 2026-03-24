@@ -185,7 +185,9 @@ resource "aws_ecs_task_definition" "enrollment" {
       { name = "DB_PORT", value = "5432" },
       { name = "DB_NAME", value = "employee_benefits_platform" },
       { name = "DB_USERNAME", value = "benefits_app" },
-      { name = "DB_PASSWORD", value = var.db_password },
+    ]
+    secrets = [
+      { name = "DB_PASSWORD", valueFrom = var.db_secret_arn },
       { name = "PUBLISHER_TRANSPORT", value = "eventbridge" },
     ]
     logConfiguration = {
@@ -217,7 +219,9 @@ resource "aws_ecs_task_definition" "processing" {
       { name = "DB_PORT", value = "5432" },
       { name = "DB_NAME", value = "employee_benefits_platform" },
       { name = "DB_USERNAME", value = "benefits_app" },
-      { name = "DB_PASSWORD", value = var.db_password },
+    ]
+    secrets = [
+      { name = "DB_PASSWORD", valueFrom = var.db_secret_arn },
       { name = "ENROLLMENT_SERVICE_URL", value = "http://${aws_lb.this.dns_name}" },
     ]
     logConfiguration = {
@@ -443,7 +447,9 @@ resource "aws_ecs_task_definition" "knowledge_service" {
       { name = "DB_PORT", value = "5432" },
       { name = "DB_NAME", value = "employee_benefits_platform" },
       { name = "DB_USERNAME", value = "benefits_app" },
-      { name = "DB_PASSWORD", value = var.db_password },
+    ]
+    secrets = [
+      { name = "DB_PASSWORD", valueFrom = var.db_secret_arn },
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -474,7 +480,9 @@ resource "aws_ecs_task_definition" "governance" {
       { name = "DB_PORT", value = "5432" },
       { name = "DB_NAME", value = "employee_benefits_platform" },
       { name = "DB_USERNAME", value = "benefits_app" },
-      { name = "DB_PASSWORD", value = var.db_password },
+    ]
+    secrets = [
+      { name = "DB_PASSWORD", valueFrom = var.db_secret_arn },
     ]
     logConfiguration = {
       logDriver = "awslogs"
