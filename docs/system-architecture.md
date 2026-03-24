@@ -285,6 +285,38 @@ stateDiagram-v2
 - category-based filtering (policy, plan, faq, compliance, process)
 - reads/writes `knowledge.document` and `knowledge.document_chunk`
 
+### Phase 2: AI Orchestration Layer
+
+#### Orchestrator Service (:8400)
+- **LangGraph multi-agent engine** with 6 specialist agents:
+  - **Router** — intent classification (keyword + LLM fallback), conversation context continuity
+  - **Enrollment Agent** — tool calling via 7 MCP tools, fabrication guard, plan-tier validation
+  - **Benefits Advisor** — RAG knowledge search, contextual re-query, conversation history
+  - **Compliance Agent** — PII detection (6 types), risk scoring (5 factors), policy evaluation
+  - **Escalation Agent** — human-in-the-loop for critical-risk actions
+  - **Synthesis Node** — response merging, UUID/PII stripping, markdown table repair
+- **Dual LLM provider**: Ollama (local) / AWS Bedrock (production)
+- **Quality controls**: token budget enforcement, response scoring, output sanitization
+
+#### Governance Service (:8500)
+- **Policy engine**: 10 YAML-driven rules, 6 condition operators, 5 effects (allow/deny/redact/log/require_approval)
+- **PII detection**: 6 types (SSN, email, phone, credit card, DOB, address) with automatic redaction
+- **Risk scoring**: multi-factor model (action type, PII presence, tool count, data sensitivity)
+- **Audit trail**: append-only PostgreSQL table with mutation-prevention triggers
+- **Approval workflows**: human-in-the-loop with 30-minute timeout, auto-expiration
+
+#### Evaluation Service (:8600)
+- **6 evaluators**: accuracy, relevance (LLM-as-judge), safety, latency, cost, faithfulness
+- **45 golden test cases** across 3 datasets (enrollment, policy, adversarial)
+- **A/B testing** between model versions with per-evaluator comparison
+- **CI integration**: eval runs on PR, regression blocks merge
+
+#### Observability
+- **Prometheus** (:9090): 9 custom metrics scraped from 5 services every 15s
+- **Grafana** (:3001): 9-panel dashboard (request rate, p95 latency, tool calls, tokens, guardrails, PII, governance, RAG)
+- **Structured logging**: JSON format, CloudWatch-compatible, request correlation IDs
+- **Cost tracking**: per-model Bedrock pricing with daily summaries
+
 ## Database Boundaries
 
 ### `enrollment`
@@ -307,6 +339,12 @@ stateDiagram-v2
 - document metadata and content
 - document chunks with vector embeddings (pgvector `vector(768)`)
 - cosine similarity index (`ivfflat`) for semantic search
+
+### `governance`
+
+- audit_trail (append-only with mutation-prevention triggers), approval_request, usage_budget
+- Owned by Governance Service
+- Note: governance migrations are in `services/ai-platform/governance/migrations/` (not shared-model)
 
 ### `orchestration`
 
@@ -365,4 +403,9 @@ flowchart LR
 | 8200 | AI Gateway |
 | 8300 | Knowledge Service |
 | 11434 | Ollama |
+| 8400 | Orchestrator Service |
+| 8500 | Governance Service |
+| 8600 | Evaluation Service |
+| 9090 | Prometheus |
+| 3001 | Grafana |
 | 55432 | PostgreSQL + pgvector |
