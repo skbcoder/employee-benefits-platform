@@ -6,13 +6,31 @@ approval workflows, audit trail, and compliance reporting.
 
 from __future__ import annotations
 
+import importlib.util
 import logging
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
+
+# Observability — shared module
+_observability_available = False
+try:
+    _obs_base = Path(__file__).parent.parent.parent / "observability"
+    _spec = importlib.util.spec_from_file_location(
+        "obs_metrics", _obs_base / "src" / "metrics" / "collector.py"
+    )
+    _mod = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    MetricsMiddleware = _mod.MetricsMiddleware
+    metrics_endpoint = _mod.metrics_endpoint
+    _observability_available = True
+except Exception:
+    pass
 
 from config.settings import get_settings
 from src.approval.queue import ApprovalQueue
@@ -39,6 +57,14 @@ app = FastAPI(
     description="Policy enforcement, audit trail, risk scoring, PII detection, and compliance reporting.",
     version="0.1.0",
 )
+
+# Observability
+if _observability_available:
+    app.add_middleware(MetricsMiddleware, service_name="governance")
+
+    @app.get("/metrics")
+    async def metrics():
+        return Response(content=metrics_endpoint(), media_type="text/plain")
 
 # Policy engine
 policy_engine = PolicyEngine()

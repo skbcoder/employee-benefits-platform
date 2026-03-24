@@ -55,5 +55,129 @@ services:
     ports:
       - "${ENROLLMENT_SERVICE_PORT:-8080}:8080"
 
+  # ── AI Platform Services ─────────────────────────────────────────────
+
+  ai-gateway:
+    profiles: ["ai", "all"]
+    build:
+      context: ../services/ai-platform/ai-gateway
+    ports:
+      - "${AI_GATEWAY_PORT:-8200}:8200"
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - KNOWLEDGE_SERVICE_URL=http://knowledge-service:8300
+      - ORCHESTRATOR_URL=http://orchestrator:8400
+      - MCP_SERVER_URL=http://mcp-server:8100
+    depends_on:
+      - knowledge-service
+      - orchestrator
+
+  orchestrator:
+    profiles: ["ai", "all"]
+    build:
+      context: ../services/ai-platform/orchestrator
+    ports:
+      - "${ORCHESTRATOR_PORT:-8400}:8400"
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - KNOWLEDGE_SERVICE_URL=http://knowledge-service:8300
+      - ENROLLMENT_SERVICE_URL=http://enrollment-service:8080
+      - GOVERNANCE_SERVICE_URL=http://governance:8500
+    depends_on:
+      - knowledge-service
+
+  knowledge-service:
+    profiles: ["ai", "all"]
+    build:
+      context: ../services/ai-platform/knowledge-service
+    ports:
+      - "${KNOWLEDGE_SERVICE_PORT:-8300}:8300"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-employee_benefits_platform}
+      - DB_USERNAME=${DB_USERNAME:-benefits_app}
+      - DB_PASSWORD=${DB_PASSWORD:-benefits_app}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  mcp-server:
+    profiles: ["ai", "all"]
+    build:
+      context: ../services/ai-platform/mcp-server
+    ports:
+      - "${MCP_SERVER_PORT:-8100}:8100"
+    environment:
+      - ENROLLMENT_SERVICE_URL=http://enrollment-service:8080
+      - PROCESSING_SERVICE_URL=http://processing-service:8081
+
+  governance:
+    profiles: ["ai", "all"]
+    build:
+      context: ../services/ai-platform/governance
+    ports:
+      - "${GOVERNANCE_PORT:-8500}:8500"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-employee_benefits_platform}
+      - DB_USERNAME=${DB_USERNAME:-benefits_app}
+      - DB_PASSWORD=${DB_PASSWORD:-benefits_app}
+
+  evaluation:
+    profiles: ["ai", "all"]
+    build:
+      context: ../services/ai-platform/evaluation
+    ports:
+      - "${EVALUATION_PORT:-8600}:8600"
+    environment:
+      - ORCHESTRATOR_URL=http://orchestrator:8400
+      - AI_GATEWAY_URL=http://ai-gateway:8200
+
+  # ── Monitoring Stack ──────────────────────────────────────────────────
+
+  prometheus:
+    profiles: ["monitoring", "all"]
+    image: prom/prometheus:v2.51.0
+    container_name: employee-benefits-prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+
+  grafana:
+    profiles: ["monitoring", "all"]
+    image: grafana/grafana:10.4.0
+    container_name: employee-benefits-grafana
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=benefits
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/ai-platform.json
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SECURITY_COOKIE_SAMESITE=disabled
+      - GF_SERVER_ROOT_URL=http://localhost:3000/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:

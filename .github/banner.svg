@@ -1,17 +1,17 @@
-<svg viewBox="0 0 1280 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 1280 340" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="320" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="340" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#0a0a0f"/>
       <stop offset="100%" stop-color="#0d1117"/>
     </linearGradient>
   </defs>
 
   <!-- Background -->
-  <rect width="1280" height="320" rx="16" fill="url(#bg)"/>
-  <rect width="1280" height="320" rx="16" stroke="#1e293b" stroke-width="1" fill="none"/>
+  <rect width="1280" height="340" rx="16" fill="url(#bg)"/>
+  <rect width="1280" height="340" rx="16" stroke="#1e293b" stroke-width="1" fill="none"/>
 
   <!-- Shield icon -->
-  <g transform="translate(180, 80)">
+  <g transform="translate(160, 70)">
     <!-- Shield body -->
     <path
       d="M64 10L20 30v28c0 30.92 18.64 59.84 44 68 25.36-8.16 44-37.08 44-68V30L64 10z"
@@ -34,31 +34,80 @@
   </g>
 
   <!-- Title text -->
-  <text x="380" y="140" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="48" font-weight="700" fill="#e5e7eb">Employee Benefits</text>
-  <text x="380" y="190" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="48" font-weight="700" fill="#e5e7eb">Platform</text>
+  <text x="360" y="130" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="48" font-weight="700" fill="#e5e7eb">Employee Benefits</text>
+  <text x="360" y="180" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="48" font-weight="700" fill="#e5e7eb">Platform</text>
 
   <!-- Subtitle -->
-  <text x="380" y="235" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#6b7280">Cloud-native enrollment processing with event-driven architecture</text>
-  <text x="380" y="260" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#6b7280">and AI-powered chatbot</text>
+  <text x="360" y="220" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="17" fill="#6b7280">Enterprise AI orchestration with multi-agent governance,</text>
+  <text x="360" y="244" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="17" fill="#6b7280">evaluation frameworks, and production observability</text>
 
-  <!-- Tech badges -->
-  <g transform="translate(380, 275)">
+  <!-- Tech badges — Row 1 -->
+  <g transform="translate(360, 265)">
     <rect x="0" y="0" width="90" height="24" rx="12" fill="#22c55e" opacity="0.15" stroke="#22c55e" stroke-width="0.5" stroke-opacity="0.3"/>
     <text x="45" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#4ade80" text-anchor="middle">Spring Boot</text>
 
-    <rect x="100" y="0" width="70" height="24" rx="12" fill="#3b82f6" opacity="0.15" stroke="#3b82f6" stroke-width="0.5" stroke-opacity="0.3"/>
-    <text x="135" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#60a5fa" text-anchor="middle">Next.js</text>
+    <rect x="100" y="0" width="65" height="24" rx="12" fill="#a855f7" opacity="0.15" stroke="#a855f7" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="132" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#c084fc" text-anchor="middle">FastAPI</text>
 
-    <rect x="180" y="0" width="70" height="24" rx="12" fill="#a855f7" opacity="0.15" stroke="#a855f7" stroke-width="0.5" stroke-opacity="0.3"/>
-    <text x="215" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#c084fc" text-anchor="middle">FastAPI</text>
+    <rect x="175" y="0" width="65" height="24" rx="12" fill="#3b82f6" opacity="0.15" stroke="#3b82f6" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="207" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#60a5fa" text-anchor="middle">Next.js</text>
 
-    <rect x="260" y="0" width="85" height="24" rx="12" fill="#0ea5e9" opacity="0.15" stroke="#0ea5e9" stroke-width="0.5" stroke-opacity="0.3"/>
-    <text x="302" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#38bdf8" text-anchor="middle">PostgreSQL</text>
+    <rect x="250" y="0" width="82" height="24" rx="12" fill="#7c3aed" opacity="0.15" stroke="#7c3aed" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="291" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#a78bfa" text-anchor="middle">LangGraph</text>
 
-    <rect x="355" y="0" width="65" height="24" rx="12" fill="#f97316" opacity="0.15" stroke="#f97316" stroke-width="0.5" stroke-opacity="0.3"/>
-    <text x="387" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#fb923c" text-anchor="middle">Ollama</text>
+    <rect x="342" y="0" width="85" height="24" rx="12" fill="#0ea5e9" opacity="0.15" stroke="#0ea5e9" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="384" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#38bdf8" text-anchor="middle">PostgreSQL</text>
 
-    <rect x="430" y="0" width="55" height="24" rx="12" fill="#eab308" opacity="0.15" stroke="#eab308" stroke-width="0.5" stroke-opacity="0.3"/>
-    <text x="457" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#facc15" text-anchor="middle">AWS</text>
+    <rect x="437" y="0" width="62" height="24" rx="12" fill="#6b7280" opacity="0.15" stroke="#6b7280" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="468" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#9ca3af" text-anchor="middle">Ollama</text>
+  </g>
+
+  <!-- Tech badges — Row 2 -->
+  <g transform="translate(360, 297)">
+    <rect x="0" y="0" width="55" height="24" rx="12" fill="#f97316" opacity="0.15" stroke="#f97316" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="27" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#fb923c" text-anchor="middle">AWS</text>
+
+    <rect x="65" y="0" width="75" height="24" rx="12" fill="#844fba" opacity="0.15" stroke="#844fba" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="102" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#a78bfa" text-anchor="middle">Terraform</text>
+
+    <rect x="150" y="0" width="85" height="24" rx="12" fill="#e6522c" opacity="0.15" stroke="#e6522c" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="192" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#f87171" text-anchor="middle">Prometheus</text>
+
+    <rect x="245" y="0" width="68" height="24" rx="12" fill="#f46800" opacity="0.15" stroke="#f46800" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="279" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#fb923c" text-anchor="middle">Grafana</text>
+
+    <rect x="323" y="0" width="65" height="24" rx="12" fill="#2496ed" opacity="0.15" stroke="#2496ed" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="355" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#60a5fa" text-anchor="middle">Docker</text>
+
+    <rect x="398" y="0" width="100" height="24" rx="12" fill="#2088ff" opacity="0.15" stroke="#2088ff" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="448" y="16" font-family="system-ui, sans-serif" font-size="11" fill="#60a5fa" text-anchor="middle">GitHub Actions</text>
+  </g>
+
+  <!-- Stats (right side) -->
+  <g transform="translate(1050, 100)">
+    <text x="0" y="0" font-family="system-ui, sans-serif" font-size="36" font-weight="700" fill="#22c55e">13</text>
+    <text x="0" y="20" font-family="system-ui, sans-serif" font-size="12" fill="#6b7280">Services</text>
+
+    <text x="80" y="0" font-family="system-ui, sans-serif" font-size="36" font-weight="700" fill="#3b82f6">114</text>
+    <text x="80" y="20" font-family="system-ui, sans-serif" font-size="12" fill="#6b7280">Tests</text>
+
+    <text x="160" y="0" font-family="system-ui, sans-serif" font-size="36" font-weight="700" fill="#a855f7">6</text>
+    <text x="160" y="20" font-family="system-ui, sans-serif" font-size="12" fill="#6b7280">AI Agents</text>
+  </g>
+
+  <!-- Feature highlights (right side) -->
+  <g transform="translate(1050, 155)" font-family="system-ui, sans-serif" font-size="12" fill="#9ca3af">
+    <circle cx="6" cy="-4" r="3" fill="#22c55e" opacity="0.6"/>
+    <text x="16" y="0">Multi-agent LangGraph orchestration</text>
+    <circle cx="6" cy="20" r="3" fill="#eab308" opacity="0.6"/>
+    <text x="16" y="24">Governance, PII detection, audit trail</text>
+    <circle cx="6" cy="44" r="3" fill="#ef4444" opacity="0.6"/>
+    <text x="16" y="48">6-layer AI security hardening</text>
+    <circle cx="6" cy="68" r="3" fill="#3b82f6" opacity="0.6"/>
+    <text x="16" y="72">Evaluation framework (45 test cases)</text>
+    <circle cx="6" cy="92" r="3" fill="#e6522c" opacity="0.6"/>
+    <text x="16" y="96">Prometheus + Grafana observability</text>
+    <circle cx="6" cy="116" r="3" fill="#f97316" opacity="0.6"/>
+    <text x="16" y="120">AWS-ready (Terraform + CloudFormation)</text>
   </g>
 </svg>

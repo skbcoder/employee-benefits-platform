@@ -13,3 +13,11 @@ output "ai_gateway_log_group_name" {
 output "knowledge_service_log_group_name" {
   value = aws_cloudwatch_log_group.knowledge_service.name
 }
+
+output "orchestrator_log_group_name" {
+  value = aws_cloudwatch_log_group.orchestrator.name
+}
+
+output "governance_log_group_name" {
+  value = aws_cloudwatch_log_group.governance.name
+}

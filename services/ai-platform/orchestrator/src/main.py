@@ -1,12 +1,15 @@
 """Orchestrator service — multi-agent LangGraph orchestration engine."""
 
 import logging
+import sys
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from config.settings import settings
@@ -14,8 +17,27 @@ from src.graph.workflow import orchestration_graph
 from src.models.decisions import IntentClassification, RoutingDecision
 from src.models.state import AgentResult, ComplianceDecision, TokenUsage
 
+# Observability — shared module (load via spec to avoid src/ namespace conflict)
+_observability_available = False
+try:
+    import importlib.util
+    _obs_base = Path(__file__).parent.parent.parent / "observability"
+    _spec = importlib.util.spec_from_file_location(
+        "obs_metrics", _obs_base / "src" / "metrics" / "collector.py"
+    )
+    _mod = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    MetricsMiddleware = _mod.MetricsMiddleware
+    metrics_endpoint = _mod.metrics_endpoint
+    _observability_available = True
+except Exception:
+    pass
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
+
+if not _observability_available:
+    logger.warning("Observability module not available — metrics disabled")
 
 
 @asynccontextmanager
@@ -39,6 +61,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+if _observability_available:
+    app.add_middleware(MetricsMiddleware, service_name="orchestrator")
+
+
+@app.get("/metrics")
+async def metrics():
+    if _observability_available:
+        return Response(content=metrics_endpoint(), media_type="text/plain")
+    return Response(content="# Observability not available\n", media_type="text/plain")
 
 
 # ── Request / Response models ─────────────────────────────────────────

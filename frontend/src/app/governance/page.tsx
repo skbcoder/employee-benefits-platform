@@ -6,6 +6,7 @@ import { AuditTab } from "./components/AuditTab";
 import { ApprovalsTab } from "./components/ApprovalsTab";
 import { ComplianceTab } from "./components/ComplianceTab";
 import { PoliciesTab } from "./components/PoliciesTab";
+import { CostTab } from "./components/CostTab";
 
 /* ================================================================== */
 /*  ICONS                                                              */
@@ -143,6 +144,7 @@ export default function GovernancePage() {
     { id: "approvals", label: "Approvals" },
     { id: "compliance", label: "Compliance" },
     { id: "policies", label: "Policies" },
+    { id: "cost", label: "Usage & Cost" },
   ];
 
   return (
@@ -205,6 +207,7 @@ export default function GovernancePage() {
       {activeTab === "approvals" && <ApprovalsTab approvals={approvals.approvals} loading={approvals.loading} error={approvals.error} refetch={approvals.refetch} />}
       {activeTab === "compliance" && <ComplianceTab entries={audit.entries} loading={audit.loading} error={audit.error} refetch={audit.refetch} />}
       {activeTab === "policies" && <PoliciesTab />}
+      {activeTab === "cost" && <CostTab />}
     </div>
   );
 }

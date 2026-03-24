@@ -47,4 +47,4 @@ export interface ApprovalRequest {
   review_notes: string | null;
 }
 
-export type GovTab = "audit" | "approvals" | "compliance" | "policies";
+export type GovTab = "audit" | "approvals" | "compliance" | "policies" | "cost";

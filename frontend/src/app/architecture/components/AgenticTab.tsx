@@ -110,6 +110,46 @@ export default function AgenticTab() {
         </div>
       </div>
 
+      {/* Observability Stack */}
+      <div className="rounded-xl border border-gray-800 bg-[#0d0d14] p-5">
+        <h3 className="mb-4 text-sm font-semibold text-gray-200">Observability Stack</h3>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-4">
+          {[
+            { title: "Prometheus Metrics", color: "#e6522c", items: [
+              "9 custom metrics (histograms, counters, gauges)",
+              "agent_request_duration_seconds — latency per agent",
+              "agent_tool_call_total — tool invocation counts",
+              "agent_token_usage_total — LLM token consumption",
+              "agent_guardrail_trigger_total — security blocks",
+              "pii_detection_total — PII type breakdown",
+              "15s scrape interval, 5 service targets",
+            ]},
+            { title: "Grafana Dashboards", color: "#f46800", items: [
+              "Pre-configured 'AI Platform' dashboard",
+              "9 panels: request rate, p95 latency, tool calls",
+              "Token usage, guardrail triggers, PII detections",
+              "Governance decisions pie chart",
+              "RAG search duration (p50 + p95)",
+              "Embedded in frontend via /grafana/ proxy",
+            ]},
+            { title: "Structured Logging", color: "#22c55e", items: [
+              "JSON-formatted (CloudWatch-compatible)",
+              "Fields: timestamp, level, service, request_id",
+              "Request correlation ID propagation",
+              "Per-request cost tracking with Bedrock pricing",
+              "Audit trail: 8 event types logged",
+            ]},
+          ].map((card) => (
+            <div key={card.title} className="rounded-lg border bg-[#111118] p-4" style={{ borderColor: card.color + "30" }}>
+              <div className="text-xs font-bold mb-2" style={{ color: card.color }}>{card.title}</div>
+              <ul className="space-y-0.5">
+                {card.items.map((item) => (<li key={item} className="text-[10px] text-gray-500">• {item}</li>))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Performance Metrics */}
       <div className="rounded-xl border border-gray-800 bg-[#0d0d14] p-5">
         <h3 className="mb-4 text-sm font-semibold text-gray-200">Performance Metrics</h3>

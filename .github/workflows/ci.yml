@@ -63,6 +63,31 @@ jobs:
       - name: Build
         run: npm run build
 
+  # ── Python Tests ──────────────────────────────────────────────────────
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install and test orchestrator
+        working-directory: services/ai-platform/orchestrator
+        run: |
+          pip install -r requirements.txt pytest pyyaml
+          PYTHONPATH=. pytest tests/ -v
+      - name: Install and test governance
+        working-directory: services/ai-platform/governance
+        run: |
+          pip install pydantic pydantic-settings httpx pyyaml pytest
+          PYTHONPATH=. pytest tests/ -v
+      - name: Install and test evaluation
+        working-directory: services/ai-platform/evaluation
+        run: |
+          pip install pydantic pydantic-settings httpx pyyaml pytest rich jinja2
+          PYTHONPATH=. pytest tests/ -v
+
   # ── Docker Build Verification ───────────────────────────────────────
   docker-build:
     name: Docker Build Check
@@ -70,13 +95,21 @@ jobs:
     strategy:
       matrix:
         service:
-          - name: enrollment-service
-            dockerfile: services/enrollment-service/Dockerfile
-          - name: processing-service
-            dockerfile: services/processing-service/Dockerfile
+          - { name: enrollment-service, context: services/enrollment-service }
+          - { name: processing-service, context: services/processing-service }
+          - { name: ai-gateway, context: services/ai-platform/ai-gateway }
+          - { name: orchestrator, context: services/ai-platform/orchestrator }
+          - { name: knowledge-service, context: services/ai-platform/knowledge-service }
+          - { name: governance, context: services/ai-platform/governance }
+          - { name: evaluation, context: services/ai-platform/evaluation }
+          - { name: mcp-server, context: services/ai-platform/mcp-server }
     steps:
       - uses: actions/checkout@v4
 
       - name: Build ${{ matrix.service.name }}
         run: |
-          docker build -f ${{ matrix.service.dockerfile }} -t ${{ matrix.service.name }}:ci .
+          if [ -f "${{ matrix.service.context }}/Dockerfile" ]; then
+            docker build -t ${{ matrix.service.name }}:ci ${{ matrix.service.context }}
+          else
+            echo "No Dockerfile found for ${{ matrix.service.name }} — skipping"
+          fi

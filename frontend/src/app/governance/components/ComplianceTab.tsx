@@ -285,6 +285,7 @@ export function ComplianceTab({ entries, loading, error, refetch }: ComplianceTa
           </div>
         )}
       </div>
+
     </div>
   );
 }

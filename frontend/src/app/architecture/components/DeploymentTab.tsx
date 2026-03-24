@@ -1,8 +1,19 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { SERVICES, CONNECTIONS, FLOW_STEPS } from "../data/services";
 import type { ServiceNode, ServiceStatus } from "../data/services";
+
+const HEALTH_PATHS: Record<number, string> = {
+  8080: "/actuator/health",
+  8081: "/actuator/health",
+  8100: "/health",
+  8200: "/api/ai/health",
+  8300: "/health",
+  8400: "/health",
+  8500: "/health",
+  8600: "/health",
+};
 
 const GROUP_META: Record<string, { label: string; color: string; icon: string }> = {
   frontend: { label: "Frontend", color: "#3b82f6", icon: "M" },
@@ -56,6 +67,31 @@ export default function DeploymentTab() {
   const [selected, setSelected] = useState<string | null>(null);
   const [flowStep, setFlowStep] = useState<number | null>(null);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  const [liveHealth, setLiveHealth] = useState<Record<number, ServiceStatus>>({});
+
+  // Fetch real health status for each service on mount
+  useEffect(() => {
+    async function checkHealth() {
+      for (const [portStr, path] of Object.entries(HEALTH_PATHS)) {
+        const port = Number(portStr);
+        try {
+          const res = await fetch(`http://localhost:${port}${path}`, {
+            signal: AbortSignal.timeout(3000),
+          });
+          setLiveHealth((prev) => ({ ...prev, [port]: res.ok ? "healthy" : "down" }));
+        } catch {
+          setLiveHealth((prev) => ({ ...prev, [port]: "down" }));
+        }
+      }
+    }
+    checkHealth();
+  }, []);
+
+  // Resolve live health status for a service (falls back to hardcoded)
+  const getStatus = (svc: ServiceNode): ServiceStatus => {
+    const port = typeof svc.port === "number" ? svc.port : parseInt(String(svc.port), 10);
+    return liveHealth[port] || svc.status;
+  };
   const detailRef = useRef<HTMLDivElement>(null);
 
   const selectedService = SERVICES.find((s) => s.id === selected) ?? null;
@@ -218,7 +254,7 @@ export default function DeploymentTab() {
                 )}
                 <rect x={svc.x} y={svc.y} width={svc.w} height={svc.h} rx={10} fill="#111118" stroke={isSel ? svc.color : "#1e293b"} strokeWidth={isSel ? 1.5 : 0.8} />
                 <rect x={svc.x} y={svc.y} width={svc.w} height={3} rx={1.5} fill={svc.color} opacity={0.8} />
-                <circle cx={svc.x + svc.w - 12} cy={svc.y + 14} r={3.5} fill={STATUS_COLORS[svc.status]} />
+                <circle cx={svc.x + svc.w - 12} cy={svc.y + 14} r={3.5} fill={STATUS_COLORS[getStatus(svc)]} />
                 <text x={svc.x + 12} y={svc.y + 22} fill="#e5e7eb" fontSize="11" fontWeight="600" fontFamily="system-ui, sans-serif">{svc.label}</text>
                 <text x={svc.x + 12} y={svc.y + 37} fill="#6b7280" fontSize="9" fontFamily="monospace">
                   {svc.port ? `:${svc.port}` : ""}{svc.port && svc.subtitle ? " · " : ""}{svc.subtitle}
@@ -239,8 +275,8 @@ export default function DeploymentTab() {
                 <div className="mt-1 flex items-center gap-2">
                   <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: selectedService.color + "18", color: selectedService.color }}>{selectedService.group}</span>
                   <span className="flex items-center gap-1.5 text-xs text-gray-400">
-                    <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS[selectedService.status] }} />
-                    {selectedService.status}
+                    <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS[getStatus(selectedService)] }} />
+                    {getStatus(selectedService)}
                   </span>
                   {selectedService.port && <code className="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-300">:{selectedService.port}</code>}
                 </div>

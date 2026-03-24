@@ -5,11 +5,31 @@ import { useEffect, useState } from "react";
 
 const STATUSES = ["SUBMITTED", "PROCESSING", "COMPLETED"] as const;
 
+const ALL_SERVICES = [
+  { port: 8080, healthPath: "/actuator/health" },
+  { port: 8081, healthPath: "/actuator/health" },
+  { port: 8100, healthPath: "/health" },
+  { port: 8200, healthPath: "/api/ai/health" },
+  { port: 8300, healthPath: "/health" },
+  { port: 8400, healthPath: "/health" },
+  { port: 8500, healthPath: "/health" },
+  { port: 8600, healthPath: "/health" },
+  { port: 9090, healthPath: "/-/healthy" },
+  { port: 3001, healthPath: "/grafana/api/health" },
+] as const;
+
 export default function HomePage() {
   const [counts, setCounts] = useState<Record<string, number>>({
     SUBMITTED: 0,
     PROCESSING: 0,
     COMPLETED: 0,
+  });
+
+  // Live health status for each service port
+  const [health, setHealth] = useState<Record<number, "up" | "down" | "checking">>(() => {
+    const initial: Record<number, "up" | "down" | "checking"> = {};
+    ALL_SERVICES.forEach((s) => { initial[s.port] = "checking"; });
+    return initial;
   });
 
   useEffect(() => {
@@ -26,7 +46,20 @@ export default function HomePage() {
         }
       }
     }
+    async function checkHealth() {
+      for (const svc of ALL_SERVICES) {
+        try {
+          const res = await fetch(`http://localhost:${svc.port}${svc.healthPath}`, {
+            signal: AbortSignal.timeout(3000),
+          });
+          setHealth((prev) => ({ ...prev, [svc.port]: res.ok ? "up" : "down" }));
+        } catch {
+          setHealth((prev) => ({ ...prev, [svc.port]: "down" }));
+        }
+      }
+    }
     fetchCounts();
+    checkHealth();
   }, []);
 
   return (
@@ -209,7 +242,14 @@ export default function HomePage() {
           ].map((svc) => (
             <div key={svc.port} className="rounded-lg border border-gray-800 bg-gray-900/30 p-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-200">{svc.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${
+                    health[svc.port] === "up" ? "bg-green-400" :
+                    health[svc.port] === "down" ? "bg-red-400" :
+                    "bg-gray-500 animate-pulse"
+                  }`} />
+                  <span className="text-sm font-medium text-gray-200">{svc.name}</span>
+                </div>
                 <code className="rounded px-1.5 py-0.5 text-xs font-bold" style={{ backgroundColor: svc.color + "18", color: svc.color }}>
                   :{svc.port}
                 </code>
@@ -230,7 +270,14 @@ export default function HomePage() {
           ].map((svc) => (
             <div key={svc.port} className="rounded-lg border border-gray-800 bg-gray-900/30 p-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-200">{svc.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${
+                    health[svc.port] === "up" ? "bg-green-400" :
+                    health[svc.port] === "down" ? "bg-red-400" :
+                    "bg-gray-500 animate-pulse"
+                  }`} />
+                  <span className="text-sm font-medium text-gray-200">{svc.name}</span>
+                </div>
                 <code className="rounded px-1.5 py-0.5 text-xs font-bold" style={{ backgroundColor: svc.color + "18", color: svc.color }}>
                   :{svc.port}
                 </code>
@@ -242,14 +289,23 @@ export default function HomePage() {
 
         {/* Governance & Eval */}
         <div className="rounded-xl border border-gray-800 bg-[#111118] p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-100">Governance & Eval</h2>
+          <h2 className="text-sm font-semibold text-gray-100">Governance & Monitoring</h2>
           {[
             { name: "Governance Service", port: 8500, desc: "Audit trail & policy enforcement", color: "#eab308" },
             { name: "Evaluation Service", port: 8600, desc: "Quality scoring & benchmarks", color: "#eab308" },
+            { name: "Prometheus", port: 9090, desc: "Metrics scraping (15s interval)", color: "#e6522c" },
+            { name: "Grafana", port: 3001, desc: "Dashboards & visualization", color: "#f46800" },
           ].map((svc) => (
             <div key={svc.port} className="rounded-lg border border-gray-800 bg-gray-900/30 p-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-200">{svc.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${
+                    health[svc.port] === "up" ? "bg-green-400" :
+                    health[svc.port] === "down" ? "bg-red-400" :
+                    "bg-gray-500 animate-pulse"
+                  }`} />
+                  <span className="text-sm font-medium text-gray-200">{svc.name}</span>
+                </div>
                 <code className="rounded px-1.5 py-0.5 text-xs font-bold" style={{ backgroundColor: svc.color + "18", color: svc.color }}>
                   :{svc.port}
                 </code>

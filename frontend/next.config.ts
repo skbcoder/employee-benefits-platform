@@ -24,6 +24,12 @@ const nextConfig: NextConfig = {
         source: "/api/orchestrate/:path*",
         destination: "http://localhost:8400/api/orchestrate/:path*",
       },
+      // Grafana proxy — avoids CORS for embedded dashboard
+      // Grafana runs with serve_from_sub_path=true and root_url=/grafana/
+      {
+        source: "/grafana/:path*",
+        destination: "http://localhost:3001/grafana/:path*",
+      },
     ];
   },
 };

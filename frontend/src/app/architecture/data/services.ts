@@ -352,6 +352,50 @@ export const SERVICES: ServiceNode[] = [
       "Extensions": "pgvector",
     },
   },
+  {
+    id: "prometheus",
+    label: "Prometheus",
+    subtitle: "Metrics Scraping",
+    port: 9090,
+    description:
+      "Scrapes /metrics endpoints from all AI platform services (Orchestrator, AI Gateway, Governance) and /actuator/prometheus from Java services every 15 seconds. 7-day retention. Powers the Grafana dashboards.",
+    tech: "Prometheus v2.51 · 15s scrape interval · 5 targets",
+    x: 30,
+    y: 600,
+    w: 150,
+    h: 58,
+    color: "#e6522c",
+    group: "infra",
+    status: "idle",
+    endpoints: ["/-/healthy", "/api/v1/query", "/api/v1/targets"],
+    config: {
+      "Scrape interval": "15s",
+      "Retention": "7 days",
+      "Targets": "orchestrator, ai-gateway, governance, enrollment, processing",
+    },
+  },
+  {
+    id: "grafana",
+    label: "Grafana",
+    subtitle: "Dashboards",
+    port: 3001,
+    description:
+      "Pre-configured dashboard 'AI Platform - Benefits Orchestrator' with 9 panels: request rate, p95 latency, tool calls, token usage, guardrail triggers, PII detections, governance decisions, RAG search duration. Embedded in the frontend UI via /grafana/ proxy.",
+    tech: "Grafana 10.4 · Prometheus datasource · Anonymous viewer access",
+    x: 670,
+    y: 600,
+    w: 150,
+    h: 58,
+    color: "#f46800",
+    group: "infra",
+    status: "idle",
+    endpoints: ["/grafana/api/health", "/grafana/d/benefits-ai-platform"],
+    config: {
+      "Auth": "Anonymous viewer + admin/benefits",
+      "Embedding": "Enabled (allow_embedding=true)",
+      "Proxy": "Next.js /grafana/* → localhost:3001/grafana/*",
+    },
+  },
 ];
 
 export const CONNECTIONS: Connection[] = [
@@ -373,6 +417,13 @@ export const CONNECTIONS: Connection[] = [
   { from: "ai-gateway", to: "orchestrator", label: "Delegates routing", style: "solid", protocol: "HTTP" },
   { from: "orchestrator", to: "knowledge", label: "RAG context", style: "dashed", protocol: "HTTP" },
   { from: "orchestrator", to: "governance", label: "Policy checks", style: "solid", protocol: "HTTP" },
+  { from: "prometheus", to: "orchestrator", label: "Scrape /metrics", style: "dashed", protocol: "HTTP" },
+  { from: "prometheus", to: "ai-gateway", label: "Scrape /metrics", style: "dashed", protocol: "HTTP" },
+  { from: "prometheus", to: "governance", label: "Scrape /metrics", style: "dashed", protocol: "HTTP" },
+  { from: "prometheus", to: "enrollment", label: "Scrape /actuator/prometheus", style: "dashed", protocol: "HTTP" },
+  { from: "prometheus", to: "processing", label: "Scrape /actuator/prometheus", style: "dashed", protocol: "HTTP" },
+  { from: "grafana", to: "prometheus", label: "PromQL queries", style: "solid", protocol: "HTTP" },
+  { from: "frontend", to: "grafana", label: "Embedded dashboard", style: "dashed", protocol: "HTTP proxy" },
 ];
 
 export const FLOW_STEPS: FlowStep[] = [

@@ -47,3 +47,23 @@ variable "processing_service_image" {
   description = "ECR image URI for processing service"
   type        = string
 }
+
+variable "ai_gateway_image" {
+  description = "ECR image URI for AI gateway"
+  type        = string
+}
+
+variable "orchestrator_image" {
+  description = "ECR image URI for orchestrator"
+  type        = string
+}
+
+variable "knowledge_service_image" {
+  description = "ECR image URI for knowledge service"
+  type        = string
+}
+
+variable "governance_image" {
+  description = "ECR image URI for governance service"
+  type        = string
+}
