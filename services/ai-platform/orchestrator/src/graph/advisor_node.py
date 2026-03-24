@@ -12,6 +12,19 @@ from src.graph.state import AgentState
 from src.models.state import AgentResult, AgentType
 from src.providers.provider_factory import get_provider
 
+try:
+    import importlib.util
+    from pathlib import Path as _Path
+    _spec = importlib.util.spec_from_file_location(
+        "obs_metrics",
+        _Path(__file__).parent.parent.parent.parent / "observability" / "src" / "metrics" / "collector.py",
+    )
+    _mod = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    _observe_rag_search = _mod.observe_rag_search
+except Exception:
+    def _observe_rag_search(service: str, duration: float) -> None: pass
+
 logger = logging.getLogger(__name__)
 
 _ADVISOR_SYSTEM_PROMPT = (
@@ -33,6 +46,7 @@ _ADVISOR_SYSTEM_PROMPT = (
 
 async def _search_knowledge(query: str, category: str | None = None) -> str | None:
     """Search the Knowledge Service for relevant context."""
+    import time as _time
     url = f"{settings.knowledge_service_url}/api/knowledge/search"
     params: dict[str, Any] = {"query": query, "top_k": 5}
     if category:
@@ -40,7 +54,9 @@ async def _search_knowledge(query: str, category: str | None = None) -> str | No
 
     async with httpx.AsyncClient(timeout=15) as client:
         try:
+            _t0 = _time.monotonic()
             resp = await client.post(url, json=params)
+            _observe_rag_search("orchestrator", _time.monotonic() - _t0)
             resp.raise_for_status()
             data = resp.json()
             chunks = data.get("results", data) if isinstance(data, dict) else data
