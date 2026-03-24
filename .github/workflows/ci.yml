@@ -95,8 +95,8 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: enrollment-service, context: services/enrollment-service }
-          - { name: processing-service, context: services/processing-service }
+          - { name: enrollment-service, context: ., file: services/enrollment-service/Dockerfile }
+          - { name: processing-service, context: ., file: services/processing-service/Dockerfile }
           - { name: ai-gateway, context: services/ai-platform/ai-gateway }
           - { name: orchestrator, context: services/ai-platform/orchestrator }
           - { name: knowledge-service, context: services/ai-platform/knowledge-service }
@@ -108,8 +108,9 @@ jobs:
 
       - name: Build ${{ matrix.service.name }}
         run: |
-          if [ -f "${{ matrix.service.context }}/Dockerfile" ]; then
-            docker build -t ${{ matrix.service.name }}:ci ${{ matrix.service.context }}
+          DOCKERFILE="${{ matrix.service.file || format('{0}/Dockerfile', matrix.service.context) }}"
+          if [ -f "$DOCKERFILE" ]; then
+            docker build -t ${{ matrix.service.name }}:ci -f "$DOCKERFILE" ${{ matrix.service.context }}
           else
             echo "No Dockerfile found for ${{ matrix.service.name }} — skipping"
           fi

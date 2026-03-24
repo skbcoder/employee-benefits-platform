@@ -23,7 +23,7 @@ class BaseEvaluator(ABC):
 
     @abstractmethod
     async def evaluate(
-        self, test_case: TestCase, response: OrchestrateResponse
+        self, test_case: EvalTestCase, response: OrchestrateResponse
     ) -> EvalResult:
         """Evaluate a single test case against the orchestrator response.
 
