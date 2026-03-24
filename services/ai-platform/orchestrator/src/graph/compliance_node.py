@@ -6,7 +6,6 @@ import logging
 import re
 from typing import Any
 
-from config.settings import settings
 from src.graph.state import AgentState
 from src.models.state import AgentResult, AgentType, ComplianceDecision, RiskLevel
 from src.providers.provider_factory import get_provider
@@ -62,8 +61,9 @@ def _assess_action_risk(agent_results: list[AgentResult]) -> ComplianceDecision:
                     )
                     max_risk = RiskLevel.HIGH
 
-            # Check for failed tool calls
-            if not tc.success:
+            # Check for failed tool calls — only flag unexpected failures,
+            # not intentional rejections from our own guardrails
+            if not tc.success and "need_info" not in tc.result and "missing_info" not in tc.result:
                 violations.append(
                     f"Tool {tc.tool_name} failed — review error before proceeding"
                 )
@@ -74,10 +74,12 @@ def _assess_action_risk(agent_results: list[AgentResult]) -> ComplianceDecision:
                 violations.append("PII detected in agent response — redaction required")
                 max_risk = RiskLevel.HIGH
 
-    requires_approval = max_risk in (RiskLevel.HIGH, RiskLevel.CRITICAL)
+    # Only require human approval for CRITICAL risk — HIGH risk gets flagged
+    # but still passes through so the user gets the agent's response
+    requires_approval = max_risk == RiskLevel.CRITICAL
 
     return ComplianceDecision(
-        approved=len(violations) == 0 or max_risk in (RiskLevel.LOW, RiskLevel.MEDIUM),
+        approved=len(violations) == 0 or max_risk in (RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH),
         risk_level=max_risk,
         violations=violations,
         requires_human_approval=requires_approval,

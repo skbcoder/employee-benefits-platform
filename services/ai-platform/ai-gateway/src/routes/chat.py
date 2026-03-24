@@ -96,6 +96,10 @@ async def chat(request: ChatRequest, raw_request: Request):
     # ── Orchestrator (Phase 2) or local agent loop ───────────────
     response_text = None
     tool_calls = []
+    agent_used = ""
+    confidence = 0.0
+    compliance_risk = "low"
+    latency_ms = 0
 
     if settings.use_orchestrator:
         result = await orchestrator_call(
@@ -104,7 +108,12 @@ async def chat(request: ChatRequest, raw_request: Request):
             history=history,
         )
         if result is not None:
-            response_text, tool_calls = result
+            response_text = result["response"]
+            tool_calls = result["tool_calls"]
+            agent_used = result.get("agent_used", "")
+            confidence = result.get("confidence", 0.0)
+            compliance_risk = result.get("compliance_risk", "low")
+            latency_ms = result.get("latency_ms", 0)
 
     # Fallback to local agent loop if orchestrator unavailable
     if response_text is None:
@@ -145,6 +154,10 @@ async def chat(request: ChatRequest, raw_request: Request):
         conversation_id=conv_id,
         message=filtered_response,
         tool_calls_made=tool_calls,
+        agent_used=agent_used,
+        confidence=confidence,
+        compliance_risk=compliance_risk,
+        latency_ms=latency_ms,
     )
 
 

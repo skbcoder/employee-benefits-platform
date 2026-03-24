@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home" },
-  { href: "/enroll", label: "New Enrollment" },
-  { href: "/status", label: "Check Status" },
-  { href: "/mcp-tools", label: "MCP Tools" },
+  { href: "/enrollment", label: "Enrollment" },
+  { href: "/governance", label: "Governance" },
   { href: "/architecture", label: "Architecture" },
+  { href: "/mcp-tools", label: "MCP Tools" },
 ];
 
 export default function Navbar() {

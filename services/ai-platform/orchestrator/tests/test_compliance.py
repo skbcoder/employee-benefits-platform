@@ -36,7 +36,8 @@ class TestActionRiskAssessment:
         decision = _assess_action_risk(results)
         assert decision.risk_level == RiskLevel.HIGH
         assert any("PII" in v for v in decision.violations)
-        assert decision.requires_human_approval is True
+        # HIGH risk is approved but flagged; only CRITICAL requires human approval
+        assert decision.approved is True
 
     def test_email_in_response_is_high_risk(self):
         results = [AgentResult(

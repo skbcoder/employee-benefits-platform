@@ -23,11 +23,11 @@ async def orchestrate(
     message: str,
     conversation_id: str = "",
     history: list[dict[str, Any]] | None = None,
-) -> tuple[str, list[str]] | None:
+) -> dict[str, Any] | None:
     """Delegate to the orchestrator service.
 
-    Returns (response_text, tool_calls_list) on success, or None if the
-    orchestrator is unavailable (caller should fall back to local agent_loop).
+    Returns a dict with response text, tool calls, and agent metadata on success.
+    Returns None if the orchestrator is unavailable (caller falls back to local agent_loop).
     """
     url = f"{_ORCHESTRATOR_URL}/api/orchestrate"
 
@@ -42,7 +42,14 @@ async def orchestrate(
             resp = await client.post(url, json=payload)
             resp.raise_for_status()
             data = resp.json()
-            return data.get("response", ""), data.get("tool_calls", [])
+            return {
+                "response": data.get("response", ""),
+                "tool_calls": data.get("tool_calls", []),
+                "agent_used": data.get("agent_used", ""),
+                "confidence": data.get("confidence", 0.0),
+                "compliance_risk": data.get("compliance_risk", "low"),
+                "latency_ms": data.get("latency_ms", 0),
+            }
         except httpx.ConnectError:
             logger.debug("Orchestrator not available — falling back to local agent loop")
             return None

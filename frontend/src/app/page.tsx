@@ -1,8 +1,34 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+const STATUSES = ["SUBMITTED", "PROCESSING", "COMPLETED"] as const;
 
 export default function HomePage() {
+  const [counts, setCounts] = useState<Record<string, number>>({
+    SUBMITTED: 0,
+    PROCESSING: 0,
+    COMPLETED: 0,
+  });
+
+  useEffect(() => {
+    async function fetchCounts() {
+      for (const status of STATUSES) {
+        try {
+          const res = await fetch(`/api/enrollments/by-status?status=${status}`);
+          if (res.ok) {
+            const data = await res.json();
+            setCounts((prev) => ({ ...prev, [status]: Array.isArray(data) ? data.length : 0 }));
+          }
+        } catch {
+          // Service unavailable — keep count at 0
+        }
+      }
+    }
+    fetchCounts();
+  }, []);
+
   return (
     <div className="space-y-5">
       {/* Compact hero */}
@@ -24,15 +50,15 @@ export default function HomePage() {
             Employee Benefits Platform
           </h1>
           <p className="text-sm text-gray-400">
-            Enroll in benefits, track enrollment status, and explore AI-powered tools.
+            Enterprise AI-powered enrollment with multi-agent orchestration, governance, and evaluation.
           </p>
         </div>
       </div>
 
-      {/* Action cards — 3-column */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* Quick Actions — 4-column */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Link
-          href="/enroll"
+          href="/enrollment"
           className="group rounded-xl border border-gray-800 bg-[#111118] p-4 transition-all hover:border-green-500/40 hover:shadow-lg hover:shadow-green-500/5"
         >
           <div className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/15 text-green-400 transition-transform group-hover:scale-110">
@@ -41,13 +67,11 @@ export default function HomePage() {
             </svg>
           </div>
           <h2 className="text-sm font-semibold text-gray-100">New Enrollment</h2>
-          <p className="mt-0.5 text-xs text-gray-500">
-            Submit benefits enrollment with medical, dental, vision, and life selections.
-          </p>
+          <p className="mt-0.5 text-xs text-gray-500">Submit benefits enrollment</p>
         </Link>
 
         <Link
-          href="/status"
+          href="/enrollment?tab=status"
           className="group rounded-xl border border-gray-800 bg-[#111118] p-4 transition-all hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/5"
         >
           <div className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/15 text-blue-400 transition-transform group-hover:scale-110">
@@ -56,25 +80,33 @@ export default function HomePage() {
             </svg>
           </div>
           <h2 className="text-sm font-semibold text-gray-100">Check Status</h2>
-          <p className="mt-0.5 text-xs text-gray-500">
-            Look up enrollments by ID, employee ID, or name to see processing status.
-          </p>
+          <p className="mt-0.5 text-xs text-gray-500">Track enrollment status</p>
         </Link>
 
         <Link
-          href="/mcp-tools"
+          href="/governance"
+          className="group rounded-xl border border-gray-800 bg-[#111118] p-4 transition-all hover:border-amber-500/40 hover:shadow-lg hover:shadow-amber-500/5"
+        >
+          <div className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400 transition-transform group-hover:scale-110">
+            <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+            </svg>
+          </div>
+          <h2 className="text-sm font-semibold text-gray-100">Governance</h2>
+          <p className="mt-0.5 text-xs text-gray-500">Audit trail & compliance</p>
+        </Link>
+
+        <Link
+          href="/architecture"
           className="group rounded-xl border border-gray-800 bg-[#111118] p-4 transition-all hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/5"
         >
           <div className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400 transition-transform group-hover:scale-110">
-            <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75a4.5 4.5 0 01-4.884 4.484c-1.076-.091-2.264.071-2.95.904l-7.152 8.684a2.548 2.548 0 11-3.586-3.586l8.684-7.152c.833-.686.995-1.874.904-2.95a4.5 4.5 0 016.336-4.486l-3.276 3.276a3.004 3.004 0 002.25 2.25l3.276-3.276c.256.565.398 1.192.398 1.852z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.867 19.125h.008v.008h-.008v-.008z" />
+            <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z" />
             </svg>
           </div>
-          <h2 className="text-sm font-semibold text-gray-100">MCP Tools</h2>
-          <p className="mt-0.5 text-xs text-gray-500">
-            Explore and test the 8 MCP tool definitions exposed by the AI Gateway.
-          </p>
+          <h2 className="text-sm font-semibold text-gray-100">Architecture</h2>
+          <p className="mt-0.5 text-xs text-gray-500">System design & diagrams</p>
         </Link>
       </div>
 
@@ -140,7 +172,7 @@ export default function HomePage() {
                 </div>
               )}
               <Link
-                href={`/status?filter=${step.status}`}
+                href={`/enrollment?tab=status&filter=${step.status}`}
                 className="flex flex-col items-center text-center w-28 animate-step-enter group cursor-pointer"
                 style={{ animationDelay: `${i * 0.2}s` }}
               >
@@ -152,8 +184,8 @@ export default function HomePage() {
                     style={{ animationDelay: step.delay }}
                   />
                   <div className="relative z-10">{step.icon}</div>
-                  <span className={`absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#0a0a0f] text-[9px] font-bold ${step.text} ring-1 ring-gray-800`}>
-                    {i + 1}
+                  <span className={`absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#0a0a0f] text-[10px] font-bold ${step.text} ring-1 ring-gray-800`}>
+                    {counts[step.status] ?? 0}
                   </span>
                 </div>
                 <span className="text-xs font-medium text-gray-200 group-hover:text-white transition-colors">
@@ -166,125 +198,65 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* API endpoints — two columns: Platform APIs + AI Platform */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-gray-800 bg-[#111118] p-4 space-y-2.5">
-          <h2 className="text-sm font-semibold text-gray-100">Platform APIs</h2>
-          <div>
-            <h3 className="text-xs font-medium text-gray-400 mb-1">
-              Enrollment Service <span className="text-gray-600">:8080</span>
-            </h3>
-            <ul className="space-y-0.5">
-              {[
-                ["POST", "/api/enrollments"],
-                ["GET", "/api/enrollments/{id}"],
-                ["GET", "/api/enrollments/by-employee/{id}"],
-                ["GET", "/api/enrollments/by-name/{name}"],
-              ].map(([method, path]) => (
-                <li key={path} className="flex items-center gap-1.5">
-                  <code className={`rounded px-1 py-px text-[10px] font-semibold border ${
-                    method === "POST"
-                      ? "bg-green-500/10 text-green-400 border-green-500/20"
-                      : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                  }`}>
-                    {method}
-                  </code>
-                  <span className="font-mono text-[11px] text-gray-400">{path}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-xs font-medium text-gray-400 mb-1">
-              Processing Service <span className="text-gray-600">:8081</span>
-            </h3>
-            <ul className="space-y-0.5">
-              {[
-                ["GET", "/api/processed-enrollments/{id}"],
-                ["GET", "/api/processed-enrollments/by-employee/{id}"],
-              ].map(([method, path]) => (
-                <li key={path} className="flex items-center gap-1.5">
-                  <code className="rounded bg-blue-500/10 px-1 py-px text-[10px] font-semibold text-blue-400 border border-blue-500/20">
-                    {method}
-                  </code>
-                  <span className="font-mono text-[11px] text-gray-400">{path}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+      {/* Service Overview — 3-column grid */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {/* Core Services */}
+        <div className="rounded-xl border border-gray-800 bg-[#111118] p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-gray-100">Core Services</h2>
+          {[
+            { name: "Enrollment Service", port: 8080, desc: "Enrollment submission & outbox dispatch", color: "#22c55e" },
+            { name: "Processing Service", port: 8081, desc: "Event consumption & async processing", color: "#22c55e" },
+          ].map((svc) => (
+            <div key={svc.port} className="rounded-lg border border-gray-800 bg-gray-900/30 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-200">{svc.name}</span>
+                <code className="rounded px-1.5 py-0.5 text-xs font-bold" style={{ backgroundColor: svc.color + "18", color: svc.color }}>
+                  :{svc.port}
+                </code>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">{svc.desc}</p>
+            </div>
+          ))}
         </div>
 
-        <div className="rounded-xl border border-gray-800 bg-[#111118] p-4 space-y-2.5">
+        {/* AI Platform */}
+        <div className="rounded-xl border border-gray-800 bg-[#111118] p-4 space-y-3">
           <h2 className="text-sm font-semibold text-gray-100">AI Platform</h2>
-          <div>
-            <h3 className="text-xs font-medium text-gray-400 mb-1">
-              AI Gateway <span className="text-gray-600">:8200</span>
-            </h3>
-            <ul className="space-y-0.5">
-              {[
-                ["POST", "/api/ai/chat"],
-                ["GET", "/api/ai/tools"],
-                ["POST", "/api/ai/tools/execute"],
-                ["GET", "/api/ai/health"],
-              ].map(([method, path]) => (
-                <li key={path} className="flex items-center gap-1.5">
-                  <code className={`rounded px-1 py-px text-[10px] font-semibold border ${
-                    method === "POST"
-                      ? "bg-green-500/10 text-green-400 border-green-500/20"
-                      : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                  }`}>
-                    {method}
-                  </code>
-                  <span className="font-mono text-[11px] text-gray-400">{path}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-xs font-medium text-gray-400 mb-1">
-              Knowledge Service <span className="text-gray-600">:8300</span>
-            </h3>
-            <ul className="space-y-0.5">
-              {[
-                ["POST", "/api/knowledge/search"],
-                ["POST", "/api/knowledge/documents"],
-                ["GET", "/api/knowledge/health"],
-              ].map(([method, path]) => (
-                <li key={path} className="flex items-center gap-1.5">
-                  <code className={`rounded px-1 py-px text-[10px] font-semibold border ${
-                    method === "POST"
-                      ? "bg-green-500/10 text-green-400 border-green-500/20"
-                      : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                  }`}>
-                    {method}
-                  </code>
-                  <span className="font-mono text-[11px] text-gray-400">{path}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-xs font-medium text-gray-400 mb-1">
-              MCP Server <span className="text-gray-600">:8100</span>
-            </h3>
-            <ul className="space-y-0.5">
-              {[
-                ["GET", "/mcp/sse"],
-                ["POST", "/mcp/messages"],
-              ].map(([method, path]) => (
-                <li key={path} className="flex items-center gap-1.5">
-                  <code className={`rounded px-1 py-px text-[10px] font-semibold border ${
-                    method === "POST"
-                      ? "bg-green-500/10 text-green-400 border-green-500/20"
-                      : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                  }`}>
-                    {method}
-                  </code>
-                  <span className="font-mono text-[11px] text-gray-400">{path}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {[
+            { name: "AI Gateway", port: 8200, desc: "Agent loop & RAG orchestration", color: "#a855f7" },
+            { name: "Orchestrator", port: 8400, desc: "Multi-agent routing & quality gates", color: "#a855f7" },
+            { name: "MCP Server", port: 8100, desc: "Tool definitions & SSE transport", color: "#a855f7" },
+            { name: "Knowledge Service", port: 8300, desc: "RAG search & embeddings", color: "#a855f7" },
+          ].map((svc) => (
+            <div key={svc.port} className="rounded-lg border border-gray-800 bg-gray-900/30 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-200">{svc.name}</span>
+                <code className="rounded px-1.5 py-0.5 text-xs font-bold" style={{ backgroundColor: svc.color + "18", color: svc.color }}>
+                  :{svc.port}
+                </code>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">{svc.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Governance & Eval */}
+        <div className="rounded-xl border border-gray-800 bg-[#111118] p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-gray-100">Governance & Eval</h2>
+          {[
+            { name: "Governance Service", port: 8500, desc: "Audit trail & policy enforcement", color: "#eab308" },
+            { name: "Evaluation Service", port: 8600, desc: "Quality scoring & benchmarks", color: "#eab308" },
+          ].map((svc) => (
+            <div key={svc.port} className="rounded-lg border border-gray-800 bg-gray-900/30 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-200">{svc.name}</span>
+                <code className="rounded px-1.5 py-0.5 text-xs font-bold" style={{ backgroundColor: svc.color + "18", color: svc.color }}>
+                  :{svc.port}
+                </code>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">{svc.desc}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

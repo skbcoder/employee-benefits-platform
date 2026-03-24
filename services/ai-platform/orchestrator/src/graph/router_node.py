@@ -55,10 +55,11 @@ _CATEGORY_TO_AGENT: dict[str, AgentType] = {
 }
 
 
-def _fast_classify(message: str) -> IntentClassification | None:
+def _fast_classify(message: str, history: list | None = None) -> IntentClassification | None:
     """Fast deterministic classification using keyword matching.
 
     Returns None if no strong signal — falls through to LLM classification.
+    Also checks conversation history to maintain context across turns.
     """
     msg_lower = message.lower()
 
@@ -79,6 +80,28 @@ def _fast_classify(message: str) -> IntentClassification | None:
         return IntentClassification(
             intent="ENROLLMENT", needs_tool_access=True, needs_rag=False
         )
+
+    # Context continuity: if the conversation was about enrollment,
+    # follow-up messages (details, plan names, IDs) stay in enrollment context.
+    # This prevents re-routing when user provides "T12345, John, john@co.com"
+    if history:
+        recent_history = " ".join(
+            (msg.get("content", "") if isinstance(msg, dict) else str(msg))
+            for msg in history[-4:]
+        ).lower()
+        history_is_enrollment = any(kw in recent_history for kw in [
+            "enroll", "enrollment", "submit", "employee id", "sign up",
+        ])
+        if history_is_enrollment:
+            # Follow-up providing details — route back to enrollment
+            has_data_signal = any(x in msg_lower for x in [
+                "@", "basic", "silver", "gold", "platinum",
+                "medical", "dental", "vision", "life",
+            ]) or bool(re.search(r"[A-Z]\d{4,}", message))  # Employee ID pattern
+            if has_data_signal:
+                return IntentClassification(
+                    intent="ENROLLMENT", needs_tool_access=True, needs_rag=False
+                )
 
     # Compliance — strong keyword match
     compliance_hits = sum(1 for kw in _COMPLIANCE_KEYWORDS if kw in msg_lower)
@@ -135,7 +158,8 @@ async def router_node(state: AgentState) -> dict[str, Any]:
     logger.info(f"Router: classifying '{user_message[:80]}'")
 
     # Phase 1: Fast deterministic classification
-    intent = _fast_classify(user_message)
+    history = state.get("messages", [])
+    intent = _fast_classify(user_message, history)
 
     if intent is None:
         # Phase 2: LLM-based classification

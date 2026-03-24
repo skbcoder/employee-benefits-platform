@@ -196,6 +196,21 @@ if [ "$WITH_AI" = true ]; then
     sleep 1
   fi
 
+  # Start governance service if venv exists
+  if [ -d "$AI_PLATFORM_DIR/governance/.venv" ]; then
+    echo "==> Starting Governance Service (port 8500)..."
+    cd "$AI_PLATFORM_DIR/governance"
+    DB_PORT="$DB_PORT" .venv/bin/uvicorn src.main:app --host 0.0.0.0 --port 8500 --reload 2>&1 | sed 's/^/    [gov] /' &
+    sleep 1
+  fi
+
+  # Start evaluation service if venv exists
+  if [ -d "$AI_PLATFORM_DIR/evaluation/.venv" ]; then
+    echo "==> Starting Evaluation Service (port 8600)..."
+    cd "$AI_PLATFORM_DIR/evaluation"
+    .venv/bin/uvicorn src.main:app --host 0.0.0.0 --port 8600 --reload 2>&1 | sed 's/^/    [eval] /' &
+  fi
+
   echo "==> Starting AI Gateway (port 8200)..."
   cd "$AI_PLATFORM_DIR/ai-gateway"
   .venv/bin/uvicorn src.main:app --host 0.0.0.0 --port 8200 --reload 2>&1 | sed 's/^/    [gw]  /' &
@@ -231,8 +246,12 @@ echo "    MCP Server:          http://localhost:8100"
 echo "    AI Gateway:          http://localhost:8200"
 echo "    Knowledge Service:   http://localhost:8300"
 echo "    Orchestrator:        http://localhost:8400"
+echo "    Governance Service:  http://localhost:8500"
+echo "    Evaluation Service:  http://localhost:8600"
 echo "    AI Gateway Docs:     http://localhost:8200/docs"
 echo "    Orchestrator Docs:   http://localhost:8400/docs"
+echo "    Governance Docs:     http://localhost:8500/docs"
+echo "    Evaluation Docs:     http://localhost:8600/docs"
 fi
 if [ "$WITH_UI" = true ]; then
 echo ""

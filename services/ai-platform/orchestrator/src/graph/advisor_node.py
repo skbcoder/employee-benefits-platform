@@ -24,7 +24,10 @@ _ADVISOR_SYSTEM_PROMPT = (
     "a single witty sentence acknowledging you can't help, then offer a "
     "benefits-related suggestion.\n\n"
     "Format responses in Markdown: use tables for comparisons, bold for "
-    "emphasis, and bullet lists for options."
+    "emphasis, and bullet lists for options.\n\n"
+    "IMPORTANT: Never mention APIs, HTTP errors, databases, or technical "
+    "internals. Respond as a knowledgeable human benefits advisor would. "
+    "Keep responses concise and directly answer the question asked."
 )
 
 
@@ -37,9 +40,10 @@ async def _search_knowledge(query: str, category: str | None = None) -> str | No
 
     async with httpx.AsyncClient(timeout=15) as client:
         try:
-            resp = await client.get(url, params=params)
+            resp = await client.post(url, json=params)
             resp.raise_for_status()
-            chunks = resp.json()
+            data = resp.json()
+            chunks = data.get("results", data) if isinstance(data, dict) else data
             if not chunks:
                 return None
 
@@ -86,7 +90,7 @@ async def advisor_node(state: AgentState) -> dict[str, Any]:
     if rag_context:
         rag_chunks_used = rag_context.count("---") + 1
 
-    # Build LLM messages
+    # Build LLM messages with conversation history
     provider = get_provider()
     messages: list[dict[str, Any]] = [
         {"role": "system", "content": _ADVISOR_SYSTEM_PROMPT},
@@ -97,6 +101,14 @@ async def advisor_node(state: AgentState) -> dict[str, Any]:
             "role": "system",
             "content": f"Answer using the following context:\n\n{rag_context}",
         })
+
+    # Include recent conversation history for context
+    history = state.get("messages", [])
+    for msg in history[-10:]:
+        role = msg.get("role", "") if isinstance(msg, dict) else getattr(msg, "role", "")
+        content = msg.get("content", "") if isinstance(msg, dict) else getattr(msg, "content", "")
+        if role in ("user", "assistant") and content:
+            messages.append({"role": role, "content": content})
 
     messages.append({"role": "user", "content": user_message})
 

@@ -1,0 +1,52 @@
+policies:
+  - id: block_ssn_exposure
+    description: "Block any response containing SSN patterns"
+    trigger:
+      agent: "*"
+      action: respond
+    conditions:
+      - field: response
+        operator: matches_pattern
+        value: "\\d{3}-\\d{2}-\\d{4}"
+    effect: deny
+    priority: 100
+    enabled: true
+
+  - id: redact_email_in_response
+    description: "Redact email addresses from agent responses"
+    trigger:
+      agent: "*"
+      action: respond
+    conditions:
+      - field: response
+        operator: matches_pattern
+        value: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+    effect: redact
+    priority: 90
+    enabled: true
+
+  - id: redact_phone_in_response
+    description: "Redact phone numbers from agent responses"
+    trigger:
+      agent: "*"
+      action: respond
+    conditions:
+      - field: response
+        operator: matches_pattern
+        value: "\\(?\\d{3}\\)?[-\\s]?\\d{3}[-\\s]?\\d{4}"
+    effect: redact
+    priority: 85
+    enabled: true
+
+  - id: block_internal_id_exposure
+    description: "Prevent exposure of internal system IDs in responses"
+    trigger:
+      agent: "*"
+      action: respond
+    conditions:
+      - field: response
+        operator: matches_pattern
+        value: "internal_id|sys_id|db_id|row_id"
+    effect: deny
+    priority: 80
+    enabled: true
