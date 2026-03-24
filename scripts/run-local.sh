@@ -188,6 +188,14 @@ if [ "$WITH_AI" = true ]; then
 
   sleep 2
 
+  # Start orchestrator if venv exists
+  if [ -d "$AI_PLATFORM_DIR/orchestrator/.venv" ]; then
+    echo "==> Starting Orchestrator (port 8400)..."
+    cd "$AI_PLATFORM_DIR/orchestrator"
+    .venv/bin/uvicorn src.main:app --host 0.0.0.0 --port 8400 --reload 2>&1 | sed 's/^/    [orc] /' &
+    sleep 1
+  fi
+
   echo "==> Starting AI Gateway (port 8200)..."
   cd "$AI_PLATFORM_DIR/ai-gateway"
   .venv/bin/uvicorn src.main:app --host 0.0.0.0 --port 8200 --reload 2>&1 | sed 's/^/    [gw]  /' &
@@ -222,7 +230,9 @@ echo "  AI Platform:"
 echo "    MCP Server:          http://localhost:8100"
 echo "    AI Gateway:          http://localhost:8200"
 echo "    Knowledge Service:   http://localhost:8300"
+echo "    Orchestrator:        http://localhost:8400"
 echo "    AI Gateway Docs:     http://localhost:8200/docs"
+echo "    Orchestrator Docs:   http://localhost:8400/docs"
 fi
 if [ "$WITH_UI" = true ]; then
 echo ""

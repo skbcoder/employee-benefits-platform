@@ -1,0 +1,51 @@
+routing:
+  # ─── Intent Classification Rules ───────────────────────────────────
+  # These supplement the LLM classifier with deterministic overrides.
+  # Evaluated in order — first match wins.
+
+  rules:
+    - id: enrollment_submit
+      description: "User wants to submit a new enrollment"
+      keywords: ["enroll me", "sign up", "submit enrollment", "register for"]
+      agent: enrollment
+      needs_tools: true
+      priority: 10
+
+    - id: enrollment_status
+      description: "User wants to check enrollment status"
+      keywords: ["check status", "my enrollment", "enrollment status", "what happened to my"]
+      agent: enrollment
+      needs_tools: true
+      priority: 10
+
+    - id: enrollment_lookup
+      description: "User wants to look up enrollments"
+      keywords: ["employee id", "look up", "find enrollment", "search for"]
+      agent: enrollment
+      needs_tools: true
+      priority: 10
+
+    - id: compliance_question
+      description: "User asks about compliance or regulations"
+      keywords: ["erisa", "hipaa", "aca", "cobra", "section 125", "compliance", "regulation"]
+      agent: compliance
+      needs_tools: false
+      priority: 8
+
+    - id: plan_comparison
+      description: "User wants to compare or learn about plans"
+      keywords: ["compare plans", "which plan", "plan options", "plan details", "coverage"]
+      agent: advisor
+      needs_tools: false
+      priority: 5
+
+    - id: general_benefits
+      description: "General benefits questions"
+      keywords: ["deductible", "copay", "premium", "eligibility", "open enrollment"]
+      agent: advisor
+      needs_tools: false
+      priority: 3
+
+  # ─── Fallback ──────────────────────────────────────────────────────
+  default_agent: advisor
+  default_confidence: 0.5
