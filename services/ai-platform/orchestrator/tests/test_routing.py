@@ -41,6 +41,31 @@ class TestFastClassify:
         result = _fast_classify("")
         assert result is None
 
+    def test_context_continuity_enrollment_details(self):
+        """When history shows enrollment context, follow-up with details stays in enrollment."""
+        history = [
+            {"role": "user", "content": "help me enroll in a medical plan"},
+            {"role": "assistant", "content": "I need your Employee ID, name, and email."},
+        ]
+        result = _fast_classify("T12345, John Smith, john@company.com", history)
+        assert result is not None
+        assert result.intent == "ENROLLMENT"
+
+    def test_context_continuity_plan_selection(self):
+        """Plan name in follow-up with enrollment history routes to enrollment."""
+        history = [
+            {"role": "user", "content": "I want to submit enrollment"},
+            {"role": "assistant", "content": "Which plan tier? basic, silver, gold, platinum"},
+        ]
+        result = _fast_classify("silver medical", history)
+        assert result is not None
+        assert result.intent == "ENROLLMENT"
+
+    def test_no_context_continuity_without_history(self):
+        """Without enrollment history, ambiguous message falls through."""
+        result = _fast_classify("silver medical", None)
+        assert result is None
+
 
 class TestParseLlmClassification:
     """Test parsing of LLM classification responses."""

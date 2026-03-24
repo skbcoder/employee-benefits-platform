@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.graph.synthesis_node import _sanitize_response
+from src.graph.synthesis_node import _fix_markdown_tables, _sanitize_response
 
 
 class TestSanitizeResponse:
@@ -40,3 +40,35 @@ class TestSanitizeResponse:
         assert "550e8400" not in result
         assert "user@test.com" not in result
         assert "outbox_event" not in result
+
+
+class TestFixMarkdownTables:
+    """Test markdown table fixing for LLM output."""
+
+    def test_adds_missing_separator(self):
+        text = "Results:\n| Name | Status |\n| John | COMPLETED |\n| Jane | PROCESSING |"
+        result = _fix_markdown_tables(text)
+        assert "| --- | --- |" in result
+        # Separator should appear exactly once
+        assert result.count("| --- | --- |") == 1
+
+    def test_preserves_existing_separator(self):
+        text = "| Name | Status |\n| --- | --- |\n| John | COMPLETED |"
+        result = _fix_markdown_tables(text)
+        assert result.count("---") == 2  # Only the original separator
+
+    def test_removes_code_fences_around_tables(self):
+        text = "Results:\n```\n| Name | Count |\n| A | 1 |\n```"
+        result = _fix_markdown_tables(text)
+        assert "```" not in result
+        assert "| Name | Count |" in result
+
+    def test_removes_extra_separator_rows(self):
+        text = "| Status | Count |\n| --- | --- |\n| A | 1 |\n| --- | --- |\n| B | 2 |"
+        result = _fix_markdown_tables(text)
+        assert result.count("| --- | --- |") == 1
+
+    def test_preserves_non_table_text(self):
+        text = "Hello world.\n\nNo tables here."
+        result = _fix_markdown_tables(text)
+        assert result == text

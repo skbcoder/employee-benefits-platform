@@ -69,8 +69,12 @@ module "messaging" {
 module "observability" {
   source = "./modules/observability"
 
-  name_prefix = local.name_prefix
-  environment = var.environment
+  name_prefix    = local.name_prefix
+  environment    = var.environment
+  ecs_cluster_name = module.ecs.cluster_name
+  db_instance_id   = module.database.instance_id
+  sqs_queue_name   = module.messaging.queue_name
+  dlq_queue_name   = module.messaging.dlq_name
 }
 
 # ── ECS (Fargate) ──────────────────────────────────────────────────
@@ -88,6 +92,7 @@ module "ecs" {
   ecs_security_group_id = module.networking.ecs_security_group_id
   db_endpoint           = module.database.endpoint
   db_password           = var.db_password
+  db_secret_arn         = module.database.secret_arn
   event_bus_arn         = module.messaging.event_bus_arn
   sqs_queue_arn         = module.messaging.queue_arn
 
@@ -95,4 +100,13 @@ module "ecs" {
   processing_service_image  = var.processing_service_image
   enrollment_log_group_name = module.observability.enrollment_log_group_name
   processing_log_group_name = module.observability.processing_log_group_name
+
+  ai_gateway_image                = var.ai_gateway_image
+  orchestrator_image              = var.orchestrator_image
+  knowledge_service_image         = var.knowledge_service_image
+  governance_image                = var.governance_image
+  ai_gateway_log_group_name       = module.observability.ai_gateway_log_group_name
+  orchestrator_log_group_name     = module.observability.orchestrator_log_group_name
+  knowledge_service_log_group_name = module.observability.knowledge_service_log_group_name
+  governance_log_group_name       = module.observability.governance_log_group_name
 }

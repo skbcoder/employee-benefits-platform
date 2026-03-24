@@ -20,7 +20,7 @@ class LatencyEvaluator(BaseEvaluator):
         self._knowledge_threshold = knowledge_threshold_ms
 
     async def evaluate(
-        self, test_case: TestCase, response: OrchestrateResponse
+        self, test_case: EvalTestCase, response: OrchestrateResponse
     ) -> EvalResult:
         latency_ms = response.latency_ms
 

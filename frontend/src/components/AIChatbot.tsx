@@ -9,6 +9,10 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   toolCalls?: string[];
+  agentUsed?: string;
+  confidence?: number;
+  complianceRisk?: string;
+  latencyMs?: number;
   timestamp: Date;
 }
 
@@ -18,6 +22,15 @@ const SUGGESTED_QUESTIONS = [
   "How do I add a dependent?",
   "What is COBRA coverage?",
 ];
+
+const TOOL_LABELS: Record<string, string> = {
+  submit_enrollment: "Submitted enrollment",
+  get_enrollment: "Retrieved enrollment",
+  check_enrollment_status: "Checked status",
+  list_enrollments_by_status: "Listed enrollments",
+  list_enrollments_by_employee_id: "Looked up by employee",
+  list_enrollments_by_employee_name: "Searched by name",
+};
 
 export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -73,6 +86,10 @@ export default function AIChatbot() {
           role: "assistant",
           content: response.message,
           toolCalls: response.tool_calls_made,
+          agentUsed: response.agent_used,
+          confidence: response.confidence,
+          complianceRisk: response.compliance_risk,
+          latencyMs: response.latency_ms,
           timestamp: new Date(),
         },
       ]);
@@ -81,10 +98,7 @@ export default function AIChatbot() {
         ...prev,
         {
           role: "assistant",
-          content:
-            err instanceof Error
-              ? `Sorry, I encountered an error: ${err.message}`
-              : "Sorry, something went wrong. Please try again.",
+          content: "I'm having trouble connecting right now. Please try again in a moment.",
           timestamp: new Date(),
         },
       ]);
@@ -123,7 +137,7 @@ export default function AIChatbot() {
 
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 flex w-[28rem] flex-col rounded-2xl border border-gray-800 bg-[#0d0d14] shadow-2xl shadow-black/50 animate-chat-open">
+        <div className="fixed bottom-24 right-6 z-50 flex w-[44rem] flex-col rounded-2xl border border-gray-800 bg-[#0d0d14] shadow-2xl shadow-black/50 animate-chat-open">
           {/* Header */}
           <div className="flex items-center justify-between rounded-t-2xl border-b border-gray-800 bg-[#111118] px-4 py-3">
             <div className="flex items-center gap-2.5">
@@ -134,7 +148,10 @@ export default function AIChatbot() {
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-gray-100">Benefits Assistant</h3>
-                <p className="text-xs text-gray-500">Powered by AI</p>
+                <p className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <span className={`h-1.5 w-1.5 rounded-full ${aiAvailable === true ? "bg-green-400" : aiAvailable === false ? "bg-red-400" : "bg-gray-500"}`} />
+                  {aiAvailable === true ? "Online" : aiAvailable === false ? "Offline" : "Connecting..."}
+                </p>
               </div>
             </div>
             <button
@@ -147,7 +164,7 @@ export default function AIChatbot() {
           </div>
 
           {/* Messages area */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ maxHeight: "400px", minHeight: "300px" }}>
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ maxHeight: "600px", minHeight: "400px" }}>
             {messages.length === 0 && (
               <div className="space-y-3 py-4">
                 {aiAvailable === false ? (
@@ -222,9 +239,42 @@ export default function AIChatbot() {
                           key={j}
                           className="inline-flex items-center rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-400"
                         >
-                          {tool}
+                          {TOOL_LABELS[tool] || tool.replace(/_/g, " ")}
                         </span>
                       ))}
+                    </div>
+                  )}
+                  {msg.agentUsed && (
+                    <div className="mt-1.5 flex items-center gap-2 text-[10px]">
+                      <span className={`rounded-full px-2 py-0.5 font-medium ${
+                        msg.agentUsed === "enrollment" ? "bg-blue-500/15 text-blue-400" :
+                        msg.agentUsed === "advisor" ? "bg-green-500/15 text-green-400" :
+                        msg.agentUsed === "compliance" ? "bg-amber-500/15 text-amber-400" :
+                        msg.agentUsed === "escalation" ? "bg-red-500/15 text-red-400" :
+                        "bg-gray-500/15 text-gray-400"
+                      }`}>
+                        {msg.agentUsed}
+                      </span>
+                      {msg.confidence !== undefined && (
+                        <span className={`flex items-center gap-1 ${
+                          msg.confidence >= 0.7 ? "text-green-500" :
+                          msg.confidence >= 0.4 ? "text-amber-500" : "text-red-500"
+                        }`}>
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          {Math.round(msg.confidence * 100)}%
+                        </span>
+                      )}
+                      {msg.complianceRisk && msg.complianceRisk !== "low" && (
+                        <span className={`rounded px-1.5 py-0.5 ${
+                          msg.complianceRisk === "medium" ? "bg-amber-500/10 text-amber-400" :
+                          "bg-red-500/10 text-red-400"
+                        }`}>
+                          risk: {msg.complianceRisk}
+                        </span>
+                      )}
+                      {msg.latencyMs !== undefined && (
+                        <span className="text-gray-600">{msg.latencyMs}ms</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -234,6 +284,7 @@ export default function AIChatbot() {
             {loading && (
               <div className="flex justify-start">
                 <div className="rounded-xl bg-[#111118] border border-gray-800/50 px-4 py-3 rounded-bl-sm">
+                  <p className="text-[10px] text-gray-500 mb-1.5">Processing your request...</p>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-green-400 animate-bounce" style={{ animationDelay: "0ms" }} />
                     <div className="h-2 w-2 rounded-full bg-green-400 animate-bounce" style={{ animationDelay: "150ms" }} />

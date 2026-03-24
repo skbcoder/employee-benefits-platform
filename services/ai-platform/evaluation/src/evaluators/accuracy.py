@@ -8,7 +8,7 @@ class AccuracyEvaluator(BaseEvaluator):
     name: str = "accuracy"
 
     async def evaluate(
-        self, test_case: TestCase, response: OrchestrateResponse
+        self, test_case: EvalTestCase, response: OrchestrateResponse
     ) -> EvalResult:
         agent_match = (
             response.agent_used.lower().strip()

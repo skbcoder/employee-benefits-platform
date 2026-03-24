@@ -1,0 +1,39 @@
+policies:
+  - id: escalate_high_risk
+    description: "Escalate to human reviewer when risk score exceeds high threshold"
+    trigger:
+      agent: "*"
+      action: "*"
+    conditions:
+      - field: risk_score
+        operator: count_gt
+        value: 0.7
+    effect: require_approval
+    priority: 50
+    enabled: true
+
+  - id: escalate_multiple_failed_tools
+    description: "Escalate when agent has 2+ failed tool invocations"
+    trigger:
+      agent: "*"
+      action: "*"
+    conditions:
+      - field: failed_tools
+        operator: count_gt
+        value: 1
+    effect: require_approval
+    priority: 55
+    enabled: true
+
+  - id: escalate_compliance_violation
+    description: "Escalate any action flagged as a compliance violation"
+    trigger:
+      agent: "*"
+      action: "*"
+    conditions:
+      - field: compliance_violation
+        operator: equals
+        value: true
+    effect: require_approval
+    priority: 60
+    enabled: true

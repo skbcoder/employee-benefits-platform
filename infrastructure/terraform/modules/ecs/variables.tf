@@ -39,6 +39,11 @@ variable "db_password" {
   sensitive = true
 }
 
+variable "db_secret_arn" {
+  description = "Secrets Manager ARN for the database password"
+  type        = string
+}
+
 variable "event_bus_arn" {
   description = "EventBridge bus ARN for publish permissions"
   type        = string
@@ -62,5 +67,37 @@ variable "enrollment_log_group_name" {
 }
 
 variable "processing_log_group_name" {
+  type = string
+}
+
+variable "ai_gateway_image" {
+  type = string
+}
+
+variable "orchestrator_image" {
+  type = string
+}
+
+variable "knowledge_service_image" {
+  type = string
+}
+
+variable "governance_image" {
+  type = string
+}
+
+variable "ai_gateway_log_group_name" {
+  type = string
+}
+
+variable "orchestrator_log_group_name" {
+  type = string
+}
+
+variable "knowledge_service_log_group_name" {
+  type = string
+}
+
+variable "governance_log_group_name" {
   type = string
 }

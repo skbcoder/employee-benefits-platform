@@ -4,11 +4,24 @@ import {
   ProcessedEnrollment,
 } from "./types";
 
+const ERROR_MESSAGES: Record<number, string> = {
+  400: "Invalid request. Please check your input and try again.",
+  404: "Not found. Please verify the ID and try again.",
+  429: "Too many requests. Please wait a moment and try again.",
+  500: "A server error occurred. Please try again shortly.",
+  502: "Service temporarily unavailable. Please try again in a moment.",
+  503: "Service under maintenance. Please check back soon.",
+};
+
+function userFriendlyError(status: number, fallback: string): string {
+  return ERROR_MESSAGES[status] || fallback;
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(text || `Request failed with status ${res.status}`);
+    throw new Error(userFriendlyError(res.status, text || "Something went wrong"));
   }
   return res.json();
 }
@@ -90,6 +103,10 @@ export interface ChatResponse {
   message: string;
   tool_calls_made: string[];
   created_at: string;
+  agent_used?: string;
+  confidence?: number;
+  compliance_risk?: string;
+  latency_ms?: number;
 }
 
 export async function sendChatMessage(

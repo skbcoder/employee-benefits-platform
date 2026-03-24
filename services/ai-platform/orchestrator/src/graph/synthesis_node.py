@@ -27,6 +27,66 @@ _INTERNAL_TERMS = [
 _EMAIL_PATTERN = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
 
 
+def _fix_markdown_tables(text: str) -> str:
+    """Fix malformed markdown tables from LLM output.
+
+    Common issues with llama3.1:8b:
+    1. Missing separator row (|---|---|) — GFM won't render without it
+    2. Wrapping tables in code fences (```) — renders as code, not table
+    3. Extra separator rows between data rows
+    """
+    # Step 1: Remove code fences that wrap tables
+    # Match ``` blocks that contain pipe-delimited lines
+    def unwrap_table_fences(m: re.Match) -> str:
+        content = m.group(1).strip()
+        if "|" in content:
+            return content
+        return m.group(0)
+
+    text = re.sub(r"```\n?(.*?)```", unwrap_table_fences, text, flags=re.DOTALL)
+
+    # Step 2: Fix table structure
+    lines = text.split("\n")
+    fixed: list[str] = []
+    in_table = False
+    header_seen = False
+    separator_added = False
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        is_table_row = stripped.startswith("|") and stripped.endswith("|") and stripped.count("|") >= 3
+        is_separator = bool(re.match(r"^\|[\s\-:|]+\|$", stripped))
+
+        if is_table_row and not is_separator:
+            if not in_table:
+                # First table row = header
+                in_table = True
+                header_seen = True
+                separator_added = False
+                fixed.append(line)
+                # Count columns for separator
+                cols = len([c for c in stripped.split("|") if c.strip()])
+                # Check if next line is a separator
+                next_stripped = lines[i + 1].strip() if i + 1 < len(lines) else ""
+                if not re.match(r"^\|[\s\-:|]+\|$", next_stripped):
+                    fixed.append("| " + " | ".join(["---"] * cols) + " |")
+                    separator_added = True
+            else:
+                fixed.append(line)
+        elif is_separator:
+            if in_table and not separator_added:
+                fixed.append(line)
+                separator_added = True
+            # Skip extra separators between data rows
+        else:
+            in_table = False
+            header_seen = False
+            separator_added = False
+            fixed.append(line)
+
+    return "\n".join(fixed)
+
+
 def _sanitize_response(text: str) -> str:
     """Remove UUIDs, internal terms, and PII from the final response."""
     # Strip UUIDs
@@ -94,12 +154,17 @@ async def synthesis_node(state: AgentState) -> dict[str, Any]:
                 response += f"\n\n**Compliance Note:**\n{ar.response}"
 
     # Sanitize before returning
-    final = _sanitize_response(response)
+    final = _fix_markdown_tables(_sanitize_response(response))
 
-    # Add compliance warning if violations exist
-    if compliance and compliance.violations and compliance.risk_level == RiskLevel.MEDIUM:
+    # Add compliance warning only for HIGH+ risk with real violations
+    # Don't show warnings for routine enrollment interactions
+    if (
+        compliance
+        and compliance.violations
+        and compliance.risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL)
+    ):
         final += (
-            "\n\n---\n*Note: This action has been flagged for compliance review.*"
+            "\n\n---\n*This action has been logged for compliance review.*"
         )
 
     return {"final_response": final}

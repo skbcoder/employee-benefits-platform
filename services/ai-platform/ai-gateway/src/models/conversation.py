@@ -35,6 +35,10 @@ class ChatResponse(BaseModel):
     conversation_id: str
     message: str
     tool_calls_made: list[str] = Field(default_factory=list)
+    agent_used: str = ""
+    confidence: float = 0.0
+    compliance_risk: str = "low"
+    latency_ms: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
