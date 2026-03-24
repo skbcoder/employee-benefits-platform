@@ -35,6 +35,8 @@ except Exception:
     def _record_governance_decision(decision: str) -> None: pass
     def _record_pii_detection(pii_type: str) -> None: pass
 
+from contextlib import asynccontextmanager
+
 from config.settings import get_settings
 from src.approval.queue import ApprovalQueue
 from src.approval.workflow import ApprovalStatus, ApprovalWorkflow
@@ -42,6 +44,7 @@ from src.audit.exporter import export_csv, export_json
 from src.audit.trail import AuditEntry, AuditTrail
 from src.compliance.pii_detector import detect_pii, redact_pii, score_pii_risk
 from src.compliance.reporter import generate_report
+from src.db import close_db, init_db
 from src.policies.engine import PolicyEngine, PolicyEffect
 from src.policies.loader import load_policies_from_directory
 from src.risk.scorer import score_action
@@ -55,10 +58,19 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
+    await close_db()
+
+
 app = FastAPI(
     title="Governance Service",
     description="Policy enforcement, audit trail, risk scoring, PII detection, and compliance reporting.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Observability
@@ -268,13 +280,13 @@ async def list_approvals():
 
 @app.post("/api/governance/approvals/{approval_id}/approve")
 async def approve_request(approval_id: str, body: ApprovalActionRequest):
-    result = await approval_queue.update_status(
+    result = await approval_queue.update_status_db(
         approval_id, ApprovalStatus.APPROVED, body.reviewer, body.notes
     )
     if not result:
         raise HTTPException(status_code=404, detail="Approval request not found or not pending")
 
-    audit_trail.log_audit(AuditEntry(
+    await audit_trail.log_audit_async(AuditEntry(
         event_type="approval_approved",
         agent=result.agent,
         action=result.action,
@@ -287,13 +299,13 @@ async def approve_request(approval_id: str, body: ApprovalActionRequest):
 
 @app.post("/api/governance/approvals/{approval_id}/deny")
 async def deny_request(approval_id: str, body: ApprovalActionRequest):
-    result = await approval_queue.update_status(
+    result = await approval_queue.update_status_db(
         approval_id, ApprovalStatus.DENIED, body.reviewer, body.notes
     )
     if not result:
         raise HTTPException(status_code=404, detail="Approval request not found or not pending")
 
-    audit_trail.log_audit(AuditEntry(
+    await audit_trail.log_audit_async(AuditEntry(
         event_type="approval_denied",
         agent=result.agent,
         action=result.action,
@@ -319,7 +331,7 @@ async def query_audit(
     limit: int = Query(100, ge=1, le=1000),
 ):
     """Query the audit trail with optional filters."""
-    entries = audit_trail.query_audit(
+    entries = await audit_trail.query_audit_db(
         event_type=event_type,
         conversation_id=conversation_id,
         agent=agent,
