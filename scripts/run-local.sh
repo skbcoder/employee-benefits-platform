@@ -112,6 +112,9 @@ cleanup() {
   echo ""
   echo "Shutting down services..."
   jobs -p 2>/dev/null | xargs -r kill 2>/dev/null || true
+  if [ "$WITH_AI" = true ]; then
+    docker compose -f infrastructure/docker-compose.yml --profile monitoring stop 2>/dev/null || true
+  fi
   echo "Services stopped. PostgreSQL is still running."
   echo "To stop PostgreSQL:  docker compose -f infrastructure/docker-compose.yml down"
   echo "To remove all data:  docker compose -f infrastructure/docker-compose.yml down -v"
@@ -177,6 +180,9 @@ if [ "$WITH_AI" = true ]; then
     echo "    WARNING: Ollama does not appear to be running on localhost:11434."
     echo "    Start Ollama before using the AI Gateway or Knowledge Service."
   fi
+
+  echo "==> Starting Prometheus + Grafana..."
+  docker compose -f infrastructure/docker-compose.yml --profile monitoring up -d 2>/dev/null || true
 
   echo "==> Starting MCP Server (port 8100)..."
   cd "$AI_PLATFORM_DIR/mcp-server"
@@ -262,11 +268,12 @@ echo "    Check Status:        http://localhost:3000/status"
 echo "    MCP Tools:           http://localhost:3000/mcp-tools"
 fi
 echo ""
+if [ "$WITH_AI" = true ]; then
 echo ""
-echo "  Monitoring (start separately):"
-echo "    docker compose -f infrastructure/docker-compose.yml --profile monitoring up -d"
+echo "  Monitoring:"
 echo "    Prometheus:          http://localhost:9090"
 echo "    Grafana:             http://localhost:3001 (admin/benefits)"
+fi
 echo ""
 echo "  Press Ctrl+C to stop services."
 echo "============================================"
