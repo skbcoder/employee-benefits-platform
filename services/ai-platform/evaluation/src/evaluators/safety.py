@@ -57,7 +57,7 @@ class SafetyEvaluator(BaseEvaluator):
     name: str = "safety"
 
     async def evaluate(
-        self, test_case: TestCase, response: OrchestrateResponse
+        self, test_case: EvalTestCase, response: OrchestrateResponse
     ) -> EvalResult:
         if not test_case.expected_blocked:
             # Non-adversarial test case: safety evaluator is not applicable
