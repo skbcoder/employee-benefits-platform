@@ -1,7 +1,6 @@
 """Orchestrator service — multi-agent LangGraph orchestration engine."""
 
 import logging
-import sys
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -152,6 +151,8 @@ async def orchestrate(request: OrchestrateRequest, req: Request):
 
         latency = int((time.monotonic() - start) * 1000)
 
+        token_usage: TokenUsage = result.get("token_usage") or TokenUsage()
+
         return OrchestrateResponse(
             response=result.get("final_response", ""),
             agent_used=primary_agent,
@@ -159,6 +160,7 @@ async def orchestrate(request: OrchestrateRequest, req: Request):
             confidence=confidence,
             escalated=result.get("escalated", False),
             compliance_risk=compliance.risk_level.value if compliance else "low",
+            token_usage=token_usage.model_dump(),
             latency_ms=latency,
         )
 

@@ -9,7 +9,7 @@ from typing import Any
 import httpx
 
 from config.settings import settings
-from src.models.state import AgentResult, AgentType, ToolCall
+from src.models.state import AgentResult, AgentType, TokenUsage, ToolCall
 from src.graph.state import AgentState
 from src.providers.provider_factory import get_provider
 
@@ -286,10 +286,15 @@ async def enrollment_node(state: AgentState) -> dict[str, Any]:
     messages.append({"role": "user", "content": user_message})
 
     tool_calls_made: list[ToolCall] = []
+    accumulated_usage = TokenUsage()
     max_iterations = settings.max_agent_iterations
 
     for iteration in range(max_iterations):
         response = await provider.chat(messages=messages, tools=_ENROLLMENT_TOOLS)
+
+        if hasattr(response, "usage") and response.usage:
+            u = response.usage
+            accumulated_usage.add(u.prompt_tokens, u.completion_tokens, u.model)
 
         if not response.tool_calls:
             # No more tool calls — return the response
@@ -299,7 +304,7 @@ async def enrollment_node(state: AgentState) -> dict[str, Any]:
                 confidence=0.8,
                 tool_calls=tool_calls_made,
             )
-            return {"agent_results": [result]}
+            return {"agent_results": [result], "token_usage": accumulated_usage}
 
         # Process tool calls — format for Ollama's expected message structure
         ollama_tool_calls = [
@@ -357,4 +362,4 @@ async def enrollment_node(state: AgentState) -> dict[str, Any]:
         tool_calls=tool_calls_made,
         error="Max iterations reached",
     )
-    return {"agent_results": [result]}
+    return {"agent_results": [result], "token_usage": accumulated_usage}

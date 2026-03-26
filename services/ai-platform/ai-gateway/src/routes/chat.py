@@ -1,7 +1,9 @@
 """Chat endpoints for the AI Gateway."""
 
+import importlib.util
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -14,11 +16,23 @@ from src.models.conversation import (
     Conversation,
     MessageRole,
 )
-from src.services.agent_loop import run_agent_loop, get_rag_context
+from src.services.agent_loop import get_rag_context, run_agent_loop
 from src.services.audit import log_event
 from src.services.guardrails import check_input, check_output
 from src.services.orchestrator_client import orchestrate as orchestrator_call
 from src.services.rate_limiter import RateLimiter
+
+try:
+    _obs_base = Path(__file__).parent.parent.parent.parent / "observability"
+    _spec = importlib.util.spec_from_file_location(
+        "obs_metrics", _obs_base / "src" / "metrics" / "collector.py"
+    )
+    _mod = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    _record_token_usage = _mod.record_token_usage
+except Exception:
+    def _record_token_usage(model: str, tokens: int) -> None:
+        pass
 
 router = APIRouter(prefix="/api/ai", tags=["chat"])
 
@@ -114,6 +128,12 @@ async def chat(request: ChatRequest, raw_request: Request):
             confidence = result.get("confidence", 0.0)
             compliance_risk = result.get("compliance_risk", "low")
             latency_ms = result.get("latency_ms", 0)
+            token_usage = result.get("token_usage", {})
+            if token_usage:
+                model = token_usage.get("model", agent_used or "unknown")
+                tokens = token_usage.get("total_tokens", 0)
+                if tokens:
+                    _record_token_usage(model, tokens)
 
     # Fallback to local agent loop if orchestrator unavailable
     if response_text is None:

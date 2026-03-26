@@ -9,7 +9,7 @@ import httpx
 
 from config.settings import settings
 from src.graph.state import AgentState
-from src.models.state import AgentResult, AgentType
+from src.models.state import AgentResult, AgentType, TokenUsage
 from src.providers.provider_factory import get_provider
 
 try:
@@ -131,10 +131,15 @@ async def advisor_node(state: AgentState) -> dict[str, Any]:
     response = await provider.chat(messages=messages)
     confidence = 0.7 if rag_context else 0.4
 
+    usage = TokenUsage()
+    if hasattr(response, "usage") and response.usage:
+        u = response.usage
+        usage.add(u.prompt_tokens, u.completion_tokens, u.model)
+
     result = AgentResult(
         agent=AgentType.ADVISOR,
         response=response.content,
         confidence=confidence,
         rag_chunks_used=rag_chunks_used,
     )
-    return {"agent_results": [result], "rag_context": rag_context or ""}
+    return {"agent_results": [result], "rag_context": rag_context or "", "token_usage": usage}
