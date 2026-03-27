@@ -9,8 +9,27 @@ import httpx
 
 from config.settings import settings
 from src.graph.state import AgentState
-from src.models.state import AgentResult, AgentType
+from src.models.state import AgentResult, AgentType, TokenUsage
 from src.providers.provider_factory import get_provider
+
+try:
+    import importlib.util
+    import sys as _sys
+    from pathlib import Path as _Path
+    if "obs_metrics" in _sys.modules:
+        _mod = _sys.modules["obs_metrics"]
+    else:
+        _spec = importlib.util.spec_from_file_location(
+            "obs_metrics",
+            _Path(__file__).parent.parent.parent.parent / "observability" / "src" / "metrics" / "collector.py",
+        )
+        _mod = importlib.util.module_from_spec(_spec)
+        _sys.modules["obs_metrics"] = _mod
+        _spec.loader.exec_module(_mod)
+    _observe_rag_search = _mod.observe_rag_search
+except Exception:
+    def _observe_rag_search(service: str, duration: float) -> None:
+        pass
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +52,7 @@ _ADVISOR_SYSTEM_PROMPT = (
 
 async def _search_knowledge(query: str, category: str | None = None) -> str | None:
     """Search the Knowledge Service for relevant context."""
+    import time as _time
     url = f"{settings.knowledge_service_url}/api/knowledge/search"
     params: dict[str, Any] = {"query": query, "top_k": 5}
     if category:
@@ -40,7 +60,9 @@ async def _search_knowledge(query: str, category: str | None = None) -> str | No
 
     async with httpx.AsyncClient(timeout=15) as client:
         try:
+            _t0 = _time.monotonic()
             resp = await client.post(url, json=params)
+            _observe_rag_search("orchestrator", _time.monotonic() - _t0)
             resp.raise_for_status()
             data = resp.json()
             chunks = data.get("results", data) if isinstance(data, dict) else data
@@ -115,10 +137,15 @@ async def advisor_node(state: AgentState) -> dict[str, Any]:
     response = await provider.chat(messages=messages)
     confidence = 0.7 if rag_context else 0.4
 
+    usage = TokenUsage()
+    if hasattr(response, "usage") and response.usage:
+        u = response.usage
+        usage.add(u.prompt_tokens, u.completion_tokens, u.model)
+
     result = AgentResult(
         agent=AgentType.ADVISOR,
         response=response.content,
         confidence=confidence,
         rag_chunks_used=rag_chunks_used,
     )
-    return {"agent_results": [result], "rag_context": rag_context or ""}
+    return {"agent_results": [result], "rag_context": rag_context or "", "token_usage": usage}

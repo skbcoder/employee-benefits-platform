@@ -12,6 +12,25 @@ from src.services.rag_client import rag_client
 from src.services.guardrails import sanitize_rag_context
 from src.services.audit import log_event
 
+try:
+    import importlib.util, sys
+    from pathlib import Path as _Path
+    if "obs_metrics" in sys.modules:
+        _mod = sys.modules["obs_metrics"]
+    else:
+        _spec = importlib.util.spec_from_file_location(
+            "obs_metrics",
+            _Path(__file__).parent.parent.parent.parent / "observability" / "src" / "metrics" / "collector.py",
+        )
+        _mod = importlib.util.module_from_spec(_spec)
+        sys.modules["obs_metrics"] = _mod
+        _spec.loader.exec_module(_mod)
+    _record_tool_call = _mod.record_tool_call
+    _observe_rag_search = _mod.observe_rag_search
+except Exception:
+    def _record_tool_call(name: str) -> None: pass
+    def _observe_rag_search(service: str, duration: float) -> None: pass
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -487,6 +506,7 @@ async def run_agent_loop(
 
             logger.info(f"Executing tool: {tool_name} with args: {json.dumps(tool_args)}")
             tool_calls_made.append(tool_name)
+            _record_tool_call(tool_name)
             log_event("tool_executed", extra={"tool_name": tool_name, "tool_args": tool_args})
 
             result = await mcp_client.execute_tool(tool_name, tool_args)
@@ -529,7 +549,10 @@ def _needs_tool_access(user_message: str, rag_context: str | None) -> bool:
 
 async def get_rag_context(query: str, category: str | None = None) -> str | None:
     """Retrieve RAG context from the Knowledge Service."""
+    import time as _time
+    _t0 = _time.monotonic()
     chunks = await rag_client.search(query=query, category=category, top_k=5)
+    _observe_rag_search("ai-gateway", _time.monotonic() - _t0)
     if not chunks:
         return None
 

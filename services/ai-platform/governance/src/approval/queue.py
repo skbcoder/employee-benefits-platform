@@ -29,7 +29,7 @@ class ApprovalQueue:
         risk_score: float = 0.0,
     ) -> ApprovalRequest:
         async with self._lock:
-            return self._workflow.create_approval(
+            return await self._workflow.create_approval_async(
                 conversation_id=conversation_id,
                 agent=agent,
                 action=action,
@@ -40,11 +40,11 @@ class ApprovalQueue:
 
     async def get_pending(self) -> list[ApprovalRequest]:
         async with self._lock:
-            return self._workflow.get_pending_approvals()
+            return await self._workflow.get_pending_approvals_async()
 
     async def get_by_id(self, request_id: str) -> ApprovalRequest | None:
         async with self._lock:
-            return self._workflow.get_by_id(request_id)
+            return await self._workflow.get_by_id_async(request_id)
 
     async def update_status(
         self,
@@ -59,3 +59,13 @@ class ApprovalQueue:
             elif status == ApprovalStatus.DENIED:
                 return self._workflow.deny(request_id, reviewer, notes)
             return None
+
+    async def update_status_db(
+        self,
+        request_id: str,
+        status: ApprovalStatus,
+        reviewer: str = "",
+        notes: str = "",
+    ) -> ApprovalRequest | None:
+        async with self._lock:
+            return await self._workflow.update_status_async(request_id, status, reviewer, notes)

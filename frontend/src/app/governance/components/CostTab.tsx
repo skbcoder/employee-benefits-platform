@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const GRAFANA_URL = "/grafana/d/benefits-ai-platform/ai-platform-benefits-orchestrator?orgId=1&kiosk&theme=dark";
+const GRAFANA_URL = "/grafana/d/benefits-ai-platform/ai-platform-benefits-orchestrator?orgId=1&kiosk&theme=dark&refresh=15s";
 
 function GrafanaEmbed() {
   const [grafanaUp, setGrafanaUp] = useState<boolean | null>(null);
@@ -40,7 +40,7 @@ function GrafanaEmbed() {
         src={GRAFANA_URL}
         width="100%"
         height="600"
-        frameBorder="0"
+        style={{ border: 0 }}
         className="bg-[#0a0a0f]"
         title="Grafana Dashboard"
       />
@@ -55,14 +55,6 @@ interface MetricsSummary {
   toolCalls: number;
   guardrailTriggers: number;
   metricsAvailable: boolean;
-}
-
-function parsePrometheusValue(text: string, metricName: string, labels?: string): number {
-  const pattern = labels
-    ? new RegExp(`^${metricName}\\{${labels}\\}\\s+([\\d.e+]+)`, "m")
-    : new RegExp(`^${metricName}\\s+([\\d.e+]+)`, "m");
-  const match = text.match(pattern);
-  return match ? parseFloat(match[1]) : 0;
 }
 
 function parsePrometheusTotal(text: string, metricName: string): number {
@@ -85,40 +77,51 @@ export function CostTab() {
     metricsAvailable: false,
   });
   const [loading, setLoading] = useState(true);
-  const [raw, setRaw] = useState("");
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchMetrics = async () => {
+    try {
+      // Fetch from both services and merge
+      const [orchRes, gwRes] = await Promise.allSettled([
+        fetch("http://localhost:8400/metrics", { signal: AbortSignal.timeout(5000) }),
+        fetch("http://localhost:8200/metrics", { signal: AbortSignal.timeout(5000) }),
+      ]);
+
+      let combinedText = "";
+      if (orchRes.status === "fulfilled" && orchRes.value.ok) {
+        combinedText += await orchRes.value.text();
+      }
+      if (gwRes.status === "fulfilled" && gwRes.value.ok) {
+        combinedText += "\n" + await gwRes.value.text();
+      }
+      if (!combinedText.trim()) throw new Error("no metrics");
+
+      const totalReqs = parsePrometheusTotal(combinedText, "agent_request_total");
+      const totalTokens = parsePrometheusTotal(combinedText, "agent_token_usage_total");
+      const durationSum = parsePrometheusTotal(combinedText, "agent_request_duration_seconds_sum");
+      const durationCount = parsePrometheusTotal(combinedText, "agent_request_duration_seconds_count");
+      const toolCalls = parsePrometheusTotal(combinedText, "agent_tool_call_total");
+      const guardrails = parsePrometheusTotal(combinedText, "agent_guardrail_trigger_total");
+
+      setMetrics({
+        totalRequests: Math.round(totalReqs),
+        totalTokens: Math.round(totalTokens),
+        avgDuration: durationCount > 0 ? `${(durationSum / durationCount * 1000).toFixed(0)}ms` : "—",
+        toolCalls: Math.round(toolCalls),
+        guardrailTriggers: Math.round(guardrails),
+        metricsAvailable: true,
+      });
+      setLastUpdated(new Date());
+    } catch {
+      setMetrics((prev) => ({ ...prev, metricsAvailable: false }));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchMetrics() {
-      try {
-        // Try orchestrator metrics first
-        const res = await fetch("http://localhost:8400/metrics", {
-          signal: AbortSignal.timeout(5000),
-        });
-        if (!res.ok) throw new Error("not ok");
-        const text = await res.text();
-        setRaw(text);
-
-        const totalReqs = parsePrometheusTotal(text, "agent_request_total");
-        const totalTokens = parsePrometheusTotal(text, "agent_token_usage_total");
-        const durationSum = parsePrometheusTotal(text, "agent_request_duration_seconds_sum");
-        const durationCount = parsePrometheusTotal(text, "agent_request_duration_seconds_count");
-        const toolCalls = parsePrometheusTotal(text, "agent_tool_call_total");
-        const guardrails = parsePrometheusTotal(text, "agent_guardrail_trigger_total");
-
-        setMetrics({
-          totalRequests: Math.round(totalReqs),
-          totalTokens: Math.round(totalTokens),
-          avgDuration: durationCount > 0 ? `${(durationSum / durationCount * 1000).toFixed(0)}ms` : "—",
-          toolCalls: Math.round(toolCalls),
-          guardrailTriggers: Math.round(guardrails),
-          metricsAvailable: true,
-        });
-      } catch {
-        setMetrics((prev) => ({ ...prev, metricsAvailable: false }));
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchMetrics();
     const interval = setInterval(fetchMetrics, 15000);
     return () => clearInterval(interval);
@@ -148,6 +151,28 @@ export function CostTab() {
 
   return (
     <div className="space-y-5">
+      {/* Live Metrics Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-200">Live Metrics</h3>
+        <div className="flex items-center gap-3">
+          {lastUpdated && (
+            <span className="text-[10px] text-gray-600">
+              Updated {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+          <button
+            onClick={() => { setRefreshing(true); fetchMetrics(); }}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 rounded-lg bg-gray-800 px-3 py-1.5 text-[11px] text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors disabled:opacity-50"
+          >
+            <svg className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M20.992 4.661v4.992" />
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
       {/* Live Metrics Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         {[

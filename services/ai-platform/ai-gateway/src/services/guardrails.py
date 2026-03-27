@@ -203,6 +203,21 @@ _OUTPUT_LEAK_PATTERNS: list[re.Pattern[str]] = [
         r"\bdelivery_status\b",
         r"\baggregate_type\b",
         r"\bcorrelation_id\b",
+        # Raw tool call / function schema leaks
+        r'\{\s*"name"\s*:\s*"[a-z_]+"\s*,\s*"parameters"',
+        r'\{\s*"function"\s*:\s*\{',
+        r'"type"\s*:\s*"function"\s*,\s*"function"',
+        # API internals that should never be exposed
+        r"/api/enrollments",
+        r"/api/processed-enrollments",
+        r"/api/governance",
+        r"/api/orchestrate",
+        r"\bHTTP\s+(GET|POST|PUT|DELETE|PATCH)\b",
+        r"\bstatus\s*code\s*\d{3}\b",
+        r"\b(api\s+call|rest\s+api|http\s+request|api\s+endpoint)\b",
+        # Tool/function name references (with or without parentheses)
+        r"\b(check_enrollment_status|submit_enrollment|list_enrollments_\w+"
+        r"|get_enrollment|get_enrollment_summary)\b",
     ]
 ]
 

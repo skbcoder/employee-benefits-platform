@@ -1,7 +1,6 @@
 """Orchestrator service — multi-agent LangGraph orchestration engine."""
 
 import logging
-import sys
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -21,12 +20,17 @@ from src.models.state import AgentResult, ComplianceDecision, TokenUsage
 _observability_available = False
 try:
     import importlib.util
-    _obs_base = Path(__file__).parent.parent.parent / "observability"
-    _spec = importlib.util.spec_from_file_location(
-        "obs_metrics", _obs_base / "src" / "metrics" / "collector.py"
-    )
-    _mod = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_mod)
+    import sys as _sys
+    if "obs_metrics" in _sys.modules:
+        _mod = _sys.modules["obs_metrics"]
+    else:
+        _obs_base = Path(__file__).parent.parent.parent / "observability"
+        _spec = importlib.util.spec_from_file_location(
+            "obs_metrics", _obs_base / "src" / "metrics" / "collector.py"
+        )
+        _mod = importlib.util.module_from_spec(_spec)
+        _sys.modules["obs_metrics"] = _mod
+        _spec.loader.exec_module(_mod)
     MetricsMiddleware = _mod.MetricsMiddleware
     metrics_endpoint = _mod.metrics_endpoint
     _observability_available = True
@@ -152,6 +156,8 @@ async def orchestrate(request: OrchestrateRequest, req: Request):
 
         latency = int((time.monotonic() - start) * 1000)
 
+        token_usage: TokenUsage = result.get("token_usage") or TokenUsage()
+
         return OrchestrateResponse(
             response=result.get("final_response", ""),
             agent_used=primary_agent,
@@ -159,6 +165,7 @@ async def orchestrate(request: OrchestrateRequest, req: Request):
             confidence=confidence,
             escalated=result.get("escalated", False),
             compliance_risk=compliance.risk_level.value if compliance else "low",
+            token_usage=token_usage.model_dump(),
             latency_ms=latency,
         )
 

@@ -1,7 +1,9 @@
 """Chat endpoints for the AI Gateway."""
 
+import importlib.util
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -14,11 +16,32 @@ from src.models.conversation import (
     Conversation,
     MessageRole,
 )
-from src.services.agent_loop import run_agent_loop, get_rag_context
+from src.services.agent_loop import get_rag_context, run_agent_loop
 from src.services.audit import log_event
 from src.services.guardrails import check_input, check_output
 from src.services.orchestrator_client import orchestrate as orchestrator_call
 from src.services.rate_limiter import RateLimiter
+
+try:
+    import sys as _sys
+    if "obs_metrics" in _sys.modules:
+        _mod = _sys.modules["obs_metrics"]
+    else:
+        _obs_base = Path(__file__).parent.parent.parent.parent / "observability"
+        _spec = importlib.util.spec_from_file_location(
+            "obs_metrics", _obs_base / "src" / "metrics" / "collector.py"
+        )
+        _mod = importlib.util.module_from_spec(_spec)
+        _sys.modules["obs_metrics"] = _mod
+        _spec.loader.exec_module(_mod)
+    _record_token_usage = _mod.record_token_usage
+    _record_guardrail_trigger = _mod.record_guardrail_trigger
+except Exception:
+    def _record_token_usage(model: str, tokens: int) -> None:
+        pass
+
+    def _record_guardrail_trigger(guardrail_type: str) -> None:
+        pass
 
 router = APIRouter(prefix="/api/ai", tags=["chat"])
 
@@ -70,6 +93,7 @@ async def chat(request: ChatRequest, raw_request: Request):
     # ── Input guardrail check ───────────────────────────────────────
     guardrail = check_input(request.message)
     if guardrail.blocked:
+        _record_guardrail_trigger(guardrail.reason or "unknown")
         log_event(
             "guardrail_blocked",
             conversation_id=conv_id,
@@ -114,6 +138,12 @@ async def chat(request: ChatRequest, raw_request: Request):
             confidence = result.get("confidence", 0.0)
             compliance_risk = result.get("compliance_risk", "low")
             latency_ms = result.get("latency_ms", 0)
+            token_usage = result.get("token_usage", {})
+            if token_usage:
+                model = token_usage.get("model", agent_used or "unknown")
+                tokens = token_usage.get("total_tokens", 0)
+                if tokens:
+                    _record_token_usage(model, tokens)
 
     # Fallback to local agent loop if orchestrator unavailable
     if response_text is None:
@@ -128,6 +158,7 @@ async def chat(request: ChatRequest, raw_request: Request):
     filtered_response = check_output(response_text)
     output_was_filtered = filtered_response != response_text
     if output_was_filtered:
+        _record_guardrail_trigger("output_leak")
         log_event(
             "output_filtered",
             conversation_id=conv_id,
@@ -161,6 +192,24 @@ async def chat(request: ChatRequest, raw_request: Request):
     )
 
 
+@router.get("/conversations")
+async def list_conversations():
+    """List all active conversations (summary only)."""
+    return [
+        {
+            "conversation_id": c.conversation_id,
+            "message_count": len(c.messages),
+            "created_at": c.created_at.isoformat(),
+            "updated_at": c.updated_at.isoformat(),
+            "preview": next(
+                (m.content[:100] for m in c.messages if m.role == MessageRole.USER),
+                "",
+            ),
+        }
+        for c in sorted(_conversations.values(), key=lambda c: c.updated_at, reverse=True)
+    ]
+
+
 @router.get("/conversations/{conversation_id}")
 async def get_conversation(conversation_id: str):
     """Retrieve conversation history."""
@@ -171,7 +220,14 @@ async def get_conversation(conversation_id: str):
 
 @router.delete("/conversations/{conversation_id}")
 async def delete_conversation(conversation_id: str):
-    """Delete a conversation."""
-    if conversation_id in _conversations:
-        del _conversations[conversation_id]
-    return {"status": "deleted"}
+    """Delete a conversation (clear chat). Idempotent — returns success even if not found."""
+    _conversations.pop(conversation_id, None)
+    return {"status": "deleted", "conversation_id": conversation_id}
+
+
+@router.delete("/conversations")
+async def clear_all_conversations():
+    """Clear all conversations."""
+    count = len(_conversations)
+    _conversations.clear()
+    return {"status": "cleared", "conversations_deleted": count}

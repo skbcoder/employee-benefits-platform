@@ -49,6 +49,7 @@ async def orchestrate(
                 "confidence": data.get("confidence", 0.0),
                 "compliance_risk": data.get("compliance_risk", "low"),
                 "latency_ms": data.get("latency_ms", 0),
+                "token_usage": data.get("token_usage", {}),
             }
         except httpx.ConnectError:
             logger.debug("Orchestrator not available — falling back to local agent loop")

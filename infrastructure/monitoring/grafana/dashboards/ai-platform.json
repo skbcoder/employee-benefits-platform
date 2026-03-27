@@ -7,28 +7,31 @@
   "links": [],
   "panels": [
     {
-      "title": "Request Rate (per minute)",
+      "title": "Request Rate",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
-          "expr": "rate(agent_request_total[1m]) * 60",
+          "expr": "increase(agent_request_total[5m])",
           "legendFormat": "{{agent}} ({{status}})"
         }
       ],
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "reqps" }
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
       }
     },
     {
-      "title": "Request Duration (p95)",
+      "title": "Request Duration",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "targets": [
         {
+          "expr": "agent_request_duration_seconds_sum / agent_request_duration_seconds_count",
+          "legendFormat": "avg ({{agent}})"
+        },
+        {
           "expr": "histogram_quantile(0.95, rate(agent_request_duration_seconds_bucket[5m]))",
-          "legendFormat": "p95 {{agent}}"
+          "legendFormat": "p95 ({{agent}})"
         }
       ],
       "fieldConfig": {
@@ -114,17 +117,45 @@
       ]
     },
     {
-      "title": "RAG Search Duration",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "title": "RAG Searches",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 20 },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, rate(rag_search_duration_seconds_bucket[5m]))",
-          "legendFormat": "p95 {{service}}"
+          "expr": "sum(rag_search_duration_seconds_count)",
+          "legendFormat": "Total"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "fixedColor": "purple", "mode": "fixed" } }
+      }
+    },
+    {
+      "title": "RAG Avg Duration",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 20 },
+      "targets": [
+        {
+          "expr": "rag_search_duration_seconds_sum / rag_search_duration_seconds_count",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "fixedColor": "purple", "mode": "fixed" }, "unit": "s" }
+      }
+    },
+    {
+      "title": "RAG Search Duration (timeline)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "targets": [
+        {
+          "expr": "rag_search_duration_seconds_sum / rag_search_duration_seconds_count",
+          "legendFormat": "avg ({{service}})"
         },
         {
-          "expr": "histogram_quantile(0.50, rate(rag_search_duration_seconds_bucket[5m]))",
-          "legendFormat": "p50 {{service}}"
+          "expr": "histogram_quantile(0.95, rate(rag_search_duration_seconds_bucket[5m]))",
+          "legendFormat": "p95 ({{service}})"
         }
       ],
       "fieldConfig": {
@@ -135,6 +166,7 @@
   "schemaVersion": 39,
   "tags": ["ai-platform", "benefits"],
   "templating": { "list": [] },
+  "refresh": "15s",
   "time": { "from": "now-1h", "to": "now" },
   "title": "AI Platform - Benefits Orchestrator",
   "uid": "benefits-ai-platform"
