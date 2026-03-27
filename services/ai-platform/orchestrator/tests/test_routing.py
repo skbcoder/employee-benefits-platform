@@ -61,6 +61,24 @@ class TestFastClassify:
         assert result is not None
         assert result.intent == "ENROLLMENT"
 
+    def test_context_continuity_question_breaks_out(self):
+        """A question about plans should break out of enrollment context."""
+        history = [
+            {"role": "user", "content": "What enrollments are currently processing?"},
+            {"role": "assistant", "content": "There are no enrollments in PROCESSING status."},
+        ]
+        result = _fast_classify("how many dental plans are there?", history)
+        assert result is None  # Falls through to LLM classification
+
+    def test_context_continuity_general_question_breaks_out(self):
+        """Asking 'what are the dental options' should not stay in enrollment."""
+        history = [
+            {"role": "user", "content": "I want to enroll"},
+            {"role": "assistant", "content": "I need your details."},
+        ]
+        result = _fast_classify("what are the dental plan options?", history)
+        assert result is None
+
     def test_no_context_continuity_without_history(self):
         """Without enrollment history, ambiguous message falls through."""
         result = _fast_classify("silver medical", None)

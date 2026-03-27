@@ -36,8 +36,8 @@ _OFF_TOPIC_INDICATORS = [
 _CLASSIFICATION_PROMPT = """You are an intent classifier for an employee benefits platform.
 Classify the user's message into exactly ONE category:
 
-ENROLLMENT — user wants to submit, check, update, or look up enrollment data
-ADVISOR — user asks about plan details, coverage, eligibility, deductibles, benefits policies
+ENROLLMENT — user wants to submit a new enrollment, check their own enrollment status, or look up a specific employee's enrollment by ID or name
+ADVISOR — user asks about plan details, coverage, eligibility, deductibles, benefits policies, OR asks aggregate/reporting questions like "which employees have plan X" or "how many people enrolled in Y"
 COMPLIANCE — user asks about regulations, legal requirements, ERISA, HIPAA, ACA, COBRA
 OFF_TOPIC — question is not related to employee benefits
 HARMFUL — request contains harmful, offensive, or manipulative content
@@ -82,8 +82,9 @@ def _fast_classify(message: str, history: list | None = None) -> IntentClassific
         )
 
     # Context continuity: if the conversation was about enrollment,
-    # follow-up messages (details, plan names, IDs) stay in enrollment context.
-    # This prevents re-routing when user provides "T12345, John, john@co.com"
+    # follow-up messages providing data (IDs, emails, plan selections) stay
+    # in enrollment context. But questions about plans/policies should
+    # break out and route to the advisor.
     if history:
         recent_history = " ".join(
             (msg.get("content", "") if isinstance(msg, dict) else str(msg))
@@ -93,15 +94,21 @@ def _fast_classify(message: str, history: list | None = None) -> IntentClassific
             "enroll", "enrollment", "submit", "employee id", "sign up",
         ])
         if history_is_enrollment:
-            # Follow-up providing details — route back to enrollment
-            has_data_signal = any(x in msg_lower for x in [
-                "@", "basic", "silver", "gold", "platinum",
-                "medical", "dental", "vision", "life",
-            ]) or bool(re.search(r"[A-Z]\d{4,}", message))  # Employee ID pattern
-            if has_data_signal:
-                return IntentClassification(
-                    intent="ENROLLMENT", needs_tool_access=True, needs_rag=False
-                )
+            # If the message is a question (asking about something), let it
+            # fall through to LLM classification so context can switch
+            is_question = any(kw in msg_lower for kw in [
+                "how many", "what is", "what are", "which", "tell me about",
+                "compare", "difference", "explain", "describe", "?",
+            ])
+            if not is_question:
+                # Follow-up providing details — route back to enrollment
+                has_data_signal = any(x in msg_lower for x in [
+                    "@", "basic", "silver", "gold", "platinum",
+                ]) or bool(re.search(r"[A-Z]\d{4,}", message))  # Employee ID pattern
+                if has_data_signal:
+                    return IntentClassification(
+                        intent="ENROLLMENT", needs_tool_access=True, needs_rag=False
+                    )
 
     # Compliance — strong keyword match
     compliance_hits = sum(1 for kw in _COMPLIANCE_KEYWORDS if kw in msg_lower)
