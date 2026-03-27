@@ -22,3 +22,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const conversationId = request.nextUrl.searchParams.get("conversation_id");
+
+  try {
+    const url = conversationId
+      ? `${AI_GATEWAY}/api/ai/conversations/${conversationId}`
+      : `${AI_GATEWAY}/api/ai/conversations`;
+
+    const resp = await fetch(url, { method: "DELETE" });
+    const data = await resp.json();
+    return NextResponse.json(data, { status: resp.status });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to clear conversation";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+}
