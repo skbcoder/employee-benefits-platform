@@ -134,11 +134,10 @@ class BudgetManager:
         budget.cost_used_usd += cost_usd
         budget.updated_at = datetime.now(timezone.utc)
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                loop.create_task(self._upsert_db(owner, period, tokens, cost_usd, budget))
+            loop = asyncio.get_running_loop()
+            loop.create_task(self._upsert_db(owner, period, tokens, cost_usd, budget))
         except RuntimeError:
-            pass
+            pass  # No running event loop — degraded mode
         return budget
 
     async def record_usage_async(

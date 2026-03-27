@@ -245,15 +245,18 @@ async def _get_enrollment_summary() -> str:
     return json.dumps({"summary": summary, "total": total})
 
 
-async def _execute_tool(name: str, args: dict[str, Any]) -> str:
-    """Execute a tool by calling the enrollment/processing API directly."""
+async def _execute_tool(name: str, args: dict[str, Any]) -> tuple[str, bool]:
+    """Execute a tool by calling the enrollment/processing API directly.
+
+    Returns a tuple of (result_text, is_enrollment_success).
+    """
     # Special handler: get_enrollment_summary fetches all statuses in one call
     if name == "get_enrollment_summary":
-        return await _get_enrollment_summary()
+        return await _get_enrollment_summary(), False
 
     endpoint = _TOOL_ENDPOINTS.get(name)
     if not endpoint:
-        return json.dumps({"result": "This operation is not available."})
+        return json.dumps({"result": "This operation is not available."}), False
 
     method, path_template = endpoint
     base_url = settings.enrollment_service_url
@@ -274,25 +277,26 @@ async def _execute_tool(name: str, args: dict[str, Any]) -> str:
 
             # Return empty list for 404 on list/search endpoints
             if resp.status_code == 404 and name.startswith("list_"):
-                return json.dumps([])
+                return json.dumps([]), False
 
             resp.raise_for_status()
             result_text = resp.text
 
-            # For submit_enrollment success, flag it for short-circuit
-            if name == "submit_enrollment" and resp.status_code in (200, 201, 202):
-                result_text = "__ENROLLMENT_SUCCESS__" + result_text
+            # Flag successful enrollment submissions
+            is_enrollment_success = (
+                name == "submit_enrollment" and resp.status_code in (200, 201, 202)
+            )
 
-            return result_text
+            return result_text, is_enrollment_success
         except httpx.HTTPStatusError as e:
             logger.warning(f"Tool {name} HTTP {e.response.status_code}: {e.response.text[:200]}")
             # Return user-friendly error — never expose HTTP codes to the LLM
             if e.response.status_code == 404:
-                return json.dumps({"result": "No matching records found."})
-            return json.dumps({"result": "Unable to complete this operation right now. Please try again."})
+                return json.dumps({"result": "No matching records found."}), False
+            return json.dumps({"result": "Unable to complete this operation right now. Please try again."}), False
         except httpx.RequestError as e:
             logger.warning(f"Tool {name} connection error: {e}")
-            return json.dumps({"result": "The enrollment service is temporarily unavailable. Please try again in a moment."})
+            return json.dumps({"result": "The enrollment service is temporarily unavailable. Please try again in a moment."}), False
 
 
 async def enrollment_node(state: AgentState) -> dict[str, Any]:
@@ -395,15 +399,14 @@ async def enrollment_node(state: AgentState) -> dict[str, Any]:
                 except (json.JSONDecodeError, TypeError):
                     pass
 
-            result_text = await _execute_tool(tool_name, tool_args)
+            result_text, is_enrollment_success = await _execute_tool(tool_name, tool_args)
             _record_tool_call(tool_name)
 
             # Short-circuit: if enrollment succeeded, format the response
             # directly instead of letting the LLM interpret it
-            if result_text.startswith("__ENROLLMENT_SUCCESS__"):
-                raw_json = result_text[len("__ENROLLMENT_SUCCESS__"):]
+            if is_enrollment_success:
                 try:
-                    data = json.loads(raw_json)
+                    data = json.loads(result_text)
                 except Exception:
                     data = {}
                 selections = tool_args.get("selections", [])

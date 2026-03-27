@@ -7,7 +7,7 @@ against the governance schema.
 from __future__ import annotations
 
 import logging
-from typing import AsyncIterator
+from urllib.parse import quote_plus
 
 import asyncpg
 
@@ -23,7 +23,7 @@ async def init_db() -> None:
     global _pool
     settings = get_settings()
     dsn = (
-        f"postgresql://{settings.db_username}:{settings.db_password}"
+        f"postgresql://{quote_plus(settings.db_username)}:{quote_plus(settings.db_password)}"
         f"@{settings.db_host}:{settings.db_port}/{settings.db_name}"
     )
     try:
@@ -64,5 +64,5 @@ async def _apply_migration(conn: asyncpg.Connection) -> None:
         pass  # Already applied — triggers / indexes already exist
     except Exception as exc:
         # Individual statement failures (e.g. table already exists) are expected
-        # on subsequent starts; log at debug level only.
-        logger.debug("Migration note (likely already applied): %s", exc)
+        # on subsequent starts; log at warning level for visibility.
+        logger.warning("Migration note (likely already applied): %s", exc)

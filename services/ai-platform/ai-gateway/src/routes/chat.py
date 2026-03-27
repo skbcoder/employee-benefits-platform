@@ -220,10 +220,8 @@ async def get_conversation(conversation_id: str):
 
 @router.delete("/conversations/{conversation_id}")
 async def delete_conversation(conversation_id: str):
-    """Delete a conversation (clear chat)."""
-    if conversation_id not in _conversations:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    del _conversations[conversation_id]
+    """Delete a conversation (clear chat). Idempotent — returns success even if not found."""
+    _conversations.pop(conversation_id, None)
     return {"status": "deleted", "conversation_id": conversation_id}
 
 

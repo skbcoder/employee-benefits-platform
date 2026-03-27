@@ -88,11 +88,10 @@ class AuditTrail:
 
         # Schedule async DB write without blocking the caller
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                loop.create_task(self._write_to_db(entry))
+            loop = asyncio.get_running_loop()
+            loop.create_task(self._write_to_db(entry))
         except RuntimeError:
-            pass  # No event loop — degraded mode (e.g. tests)
+            pass  # No running event loop — degraded mode (e.g. tests)
 
         return entry
 

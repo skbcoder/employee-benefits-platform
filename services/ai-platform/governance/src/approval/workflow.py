@@ -116,11 +116,10 @@ class ApprovalWorkflow:
         )
         self._requests[request.id] = request
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                loop.create_task(self._insert_db(request))
+            loop = asyncio.get_running_loop()
+            loop.create_task(self._insert_db(request))
         except RuntimeError:
-            pass
+            pass  # No running event loop — degraded mode
         return request
 
     async def create_approval_async(
