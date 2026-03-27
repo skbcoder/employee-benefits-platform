@@ -1,20 +1,20 @@
 """AI Gateway — orchestrates Ollama, MCP tools, and RAG for benefits AI."""
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contextlib import asynccontextmanager
 
+from config.settings import settings
 from fastapi import FastAPI
 from fastapi.responses import Response
 
-from config.settings import settings
+from src.routes import agents, chat, health, tools
 from src.services.mcp_client import mcp_client
 from src.services.rag_client import rag_client
-from src.routes import chat, agents, health, tools
 
 # Observability — shared module (load via spec to avoid src/ namespace conflict)
 _observability_available = False

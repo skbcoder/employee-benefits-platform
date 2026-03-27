@@ -5,10 +5,10 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+from config.settings import settings
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from config.settings import settings
 from src.models.conversation import (
     ChatMessage,
     ChatRequest,

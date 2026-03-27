@@ -3,7 +3,6 @@
 import logging
 
 import ollama
-
 from config.settings import settings
 
 logger = logging.getLogger(__name__)

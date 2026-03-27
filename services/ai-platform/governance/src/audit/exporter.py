@@ -7,7 +7,6 @@ Supports local file paths; designed to work with S3 paths in production
 from __future__ import annotations
 
 import csv
-import io
 import json
 import logging
 from datetime import datetime

@@ -6,14 +6,16 @@ import re
 from typing import Any
 
 from config.settings import settings
-from src.services.ollama_client import ollama_client
-from src.services.mcp_client import mcp_client
-from src.services.rag_client import rag_client
-from src.services.guardrails import sanitize_rag_context
+
 from src.services.audit import log_event
+from src.services.guardrails import sanitize_rag_context
+from src.services.mcp_client import mcp_client
+from src.services.ollama_client import ollama_client
+from src.services.rag_client import rag_client
 
 try:
-    import importlib.util, sys
+    import importlib.util
+    import sys
     from pathlib import Path as _Path
     if "obs_metrics" in sys.modules:
         _mod = sys.modules["obs_metrics"]

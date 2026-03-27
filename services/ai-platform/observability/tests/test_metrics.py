@@ -2,25 +2,22 @@
 
 import asyncio
 
-import pytest
-
+from src.cost.tracker import CostTracker
 from src.metrics.collector import (
-    agent_request_total,
-    agent_tool_call_total,
-    agent_token_usage_total,
-    agent_guardrail_trigger_total,
     agent_governance_decision_total,
-    pii_detection_total,
+    agent_guardrail_trigger_total,
+    agent_token_usage_total,
+    agent_tool_call_total,
     metrics_endpoint,
-    record_tool_call,
-    record_token_usage,
-    record_guardrail_trigger,
-    record_governance_decision,
-    record_pii_detection,
     observe_rag_search,
+    pii_detection_total,
+    record_governance_decision,
+    record_guardrail_trigger,
+    record_pii_detection,
+    record_token_usage,
+    record_tool_call,
     set_cost,
 )
-from src.cost.tracker import CostTracker
 
 
 def run(coro):

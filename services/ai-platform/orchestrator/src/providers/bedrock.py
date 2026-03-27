@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any
 
 from config.settings import settings
+
 from src.models.state import TokenUsage
 from src.providers.base import LLMProvider, LLMResponse
 

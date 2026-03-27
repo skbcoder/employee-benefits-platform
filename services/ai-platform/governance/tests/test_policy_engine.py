@@ -1,11 +1,9 @@
 """Tests for the policy engine."""
 
 import pytest
-
 from src.policies.engine import (
     ConditionOperator,
     PolicyCondition,
-    PolicyDecision,
     PolicyEffect,
     PolicyEngine,
     PolicyRule,

@@ -1,16 +1,16 @@
 """Knowledge Service — RAG document ingestion, embedding, and semantic search."""
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contextlib import asynccontextmanager
 
+from config.settings import settings
 from fastapi import FastAPI
 
-from config.settings import settings
-from src.routes import documents, search, health
+from src.routes import documents, health, search
 
 
 @asynccontextmanager

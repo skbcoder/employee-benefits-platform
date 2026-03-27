@@ -11,10 +11,9 @@ and ingests them into the Knowledge Service via its REST API.
 import argparse
 import json
 import sys
-from pathlib import Path
-
-import urllib.request
 import urllib.error
+import urllib.request
+from pathlib import Path
 
 SEED_DIR = Path(__file__).parent
 

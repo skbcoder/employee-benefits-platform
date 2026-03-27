@@ -6,6 +6,7 @@ Uses thresholds from the governance settings.
 from __future__ import annotations
 
 from config.settings import get_settings
+
 from src.risk.scorer import RiskLevel
 
 

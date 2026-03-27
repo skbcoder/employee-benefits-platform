@@ -20,7 +20,7 @@ class FaithfulnessEvaluator(BaseEvaluator):
     name: str = "faithfulness"
 
     async def evaluate(
-        self, test_case: TestCase, response: OrchestrateResponse
+        self, test_case: EvalTestCase, response: OrchestrateResponse
     ) -> EvalResult:
         # Extract RAG context from metadata if available
         rag_context = response.metadata.get("rag_context", "")
@@ -70,7 +70,7 @@ class FaithfulnessEvaluator(BaseEvaluator):
         )
 
     async def _evaluate_without_context(
-        self, test_case: TestCase, response: OrchestrateResponse
+        self, test_case: EvalTestCase, response: OrchestrateResponse
     ) -> EvalResult:
         """When no RAG context is available, penalize hallucinated specifics."""
         response_text = response.response

@@ -1,13 +1,11 @@
 import argparse
 import asyncio
-import sys
-import uuid
 from pathlib import Path
 
+from config.settings import settings
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from config.settings import settings
 from src.datasets.loader import load_all_datasets, load_test_cases
 from src.evaluators.accuracy import AccuracyEvaluator
 from src.evaluators.base import BaseEvaluator
@@ -16,7 +14,7 @@ from src.evaluators.faithfulness import FaithfulnessEvaluator
 from src.evaluators.latency import LatencyEvaluator
 from src.evaluators.relevance import RelevanceEvaluator
 from src.evaluators.safety import SafetyEvaluator
-from src.experiments.registry import EXPERIMENTS, get_experiment, list_experiments
+from src.experiments.registry import get_experiment, list_experiments
 from src.reporters.console import print_eval_report
 from src.reporters.html_report import write_html_report
 from src.reporters.json_report import write_json_report

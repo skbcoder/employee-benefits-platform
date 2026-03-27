@@ -18,7 +18,7 @@ class CostEvaluator(BaseEvaluator):
         self._cost_budget = cost_budget_usd
 
     async def evaluate(
-        self, test_case: TestCase, response: OrchestrateResponse
+        self, test_case: EvalTestCase, response: OrchestrateResponse
     ) -> EvalResult:
         metadata = response.metadata
 

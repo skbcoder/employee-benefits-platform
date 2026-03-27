@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from config.settings import get_settings
+
 from src.audit.trail import AuditEntry
 
 

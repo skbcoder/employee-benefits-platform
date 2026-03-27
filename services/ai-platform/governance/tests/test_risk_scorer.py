@@ -1,6 +1,5 @@
 """Tests for risk scoring."""
 
-import pytest
 
 from src.risk.scorer import RiskLevel, score_action
 

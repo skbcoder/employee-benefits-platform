@@ -1,23 +1,23 @@
 """MCP Server — wraps Employee Benefits Platform APIs as MCP tools."""
 
-import sys
 import os
+import sys
 
 # Add the mcp-server directory to the path so config/ and src/ are importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contextlib import asynccontextmanager
 
+from config.settings import settings
 from fastapi import FastAPI
 from mcp.server import Server
 from mcp.server.sse import SseServerTransport
 from starlette.routing import Mount, Route
 
-from config.settings import settings
 from src.benefits_client import benefits_client
-from src.tools import register_tools
-from src.resources import register_resources
 from src.prompts import register_prompts
+from src.resources import register_resources
+from src.tools import register_tools
 
 # ── MCP Server Setup ────────────────────────────────────────────────
 

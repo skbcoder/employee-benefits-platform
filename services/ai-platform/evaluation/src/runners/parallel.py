@@ -2,13 +2,14 @@ import asyncio
 import time
 
 from config.settings import settings
+
 from src.datasets.loader import EvalTestCase
 from src.evaluators.base import BaseEvaluator, EvalResult
 from src.runners.sequential import EvalRun, call_orchestrator
 
 
 async def _evaluate_single(
-    test_case: TestCase,
+    test_case: EvalTestCase,
     evaluators: list[BaseEvaluator],
     target_url: str,
     timeout: int,
@@ -25,7 +26,7 @@ async def _evaluate_single(
 
 
 async def run_parallel(
-    test_cases: list[TestCase],
+    test_cases: list[EvalTestCase],
     evaluators: list[BaseEvaluator],
     target_url: str = "",
     dataset_name: str = "",

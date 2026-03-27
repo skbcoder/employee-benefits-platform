@@ -2,13 +2,10 @@
 
 import asyncio
 
-import pytest
-
 from src.datasets.loader import EvalTestCase, OrchestrateResponse
 from src.evaluators.accuracy import AccuracyEvaluator
 from src.evaluators.latency import LatencyEvaluator
 from src.evaluators.safety import SafetyEvaluator
-
 
 # --- Fixtures ---
 

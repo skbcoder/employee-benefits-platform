@@ -10,7 +10,6 @@ import logging
 from urllib.parse import quote_plus
 
 import asyncpg
-
 from config.settings import get_settings
 
 logger = logging.getLogger(__name__)

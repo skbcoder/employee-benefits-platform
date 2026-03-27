@@ -1,8 +1,8 @@
 import re
 
 import httpx
-
 from config.settings import settings
+
 from src.datasets.loader import EvalTestCase, OrchestrateResponse
 from src.evaluators.base import BaseEvaluator, EvalResult
 
@@ -33,7 +33,7 @@ class RelevanceEvaluator(BaseEvaluator):
         self._timeout = timeout or settings.eval_timeout_seconds
 
     async def evaluate(
-        self, test_case: TestCase, response: OrchestrateResponse
+        self, test_case: EvalTestCase, response: OrchestrateResponse
     ) -> EvalResult:
         # Try LLM-as-judge first
         score = await self._llm_judge(test_case, response)
@@ -56,7 +56,7 @@ class RelevanceEvaluator(BaseEvaluator):
         )
 
     async def _llm_judge(
-        self, test_case: TestCase, response: OrchestrateResponse
+        self, test_case: EvalTestCase, response: OrchestrateResponse
     ) -> float | None:
         """Use the orchestrator to judge relevance. Returns 0.0-1.0 or None on failure."""
         prompt = RELEVANCE_PROMPT_TEMPLATE.format(
@@ -89,7 +89,7 @@ class RelevanceEvaluator(BaseEvaluator):
             return None
 
     def _heuristic_score(
-        self, test_case: TestCase, response: OrchestrateResponse
+        self, test_case: EvalTestCase, response: OrchestrateResponse
     ) -> float:
         """Keyword overlap heuristic as fallback when LLM is unavailable."""
         if not response.response:

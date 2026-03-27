@@ -4,7 +4,7 @@ import json
 from typing import Any
 
 from mcp.server import Server
-from mcp.types import Tool, TextContent
+from mcp.types import TextContent, Tool
 
 from src.benefits_client import benefits_client
 

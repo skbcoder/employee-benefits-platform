@@ -1,6 +1,5 @@
 """Tests for the synthesis node — response merging and output sanitization."""
 
-import pytest
 
 from src.graph.synthesis_node import _fix_markdown_tables, _sanitize_response
 

@@ -1,9 +1,7 @@
 """Tests for the router node — intent classification and routing decisions."""
 
-import pytest
 
 from src.graph.router_node import _fast_classify, _parse_llm_classification
-from src.models.state import AgentType
 
 
 class TestFastClassify:

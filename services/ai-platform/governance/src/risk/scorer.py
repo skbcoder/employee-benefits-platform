@@ -10,9 +10,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
-
 from config.settings import get_settings
+from pydantic import BaseModel, Field
 
 
 class RiskLevel(str, Enum):

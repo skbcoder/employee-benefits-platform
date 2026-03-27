@@ -8,7 +8,6 @@ server-to-server communication within the AI Gateway.
 from typing import Any
 
 import httpx
-
 from config.settings import settings
 
 _ENROLLMENT_URL = settings.enrollment_service_url

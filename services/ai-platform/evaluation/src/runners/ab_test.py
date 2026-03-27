@@ -68,7 +68,7 @@ class ABTestResult(BaseModel):
 
 
 async def run_ab_test(
-    test_cases: list[TestCase],
+    test_cases: list[EvalTestCase],
     evaluators: list[BaseEvaluator],
     config_a: dict,
     config_b: dict,

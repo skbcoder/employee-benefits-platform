@@ -3,7 +3,6 @@
 from typing import Any
 
 import httpx
-
 from config.settings import settings
 
 

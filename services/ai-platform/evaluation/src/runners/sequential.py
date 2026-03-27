@@ -3,9 +3,9 @@ import uuid
 from datetime import datetime, timezone
 
 import httpx
+from config.settings import settings
 from pydantic import BaseModel, Field
 
-from config.settings import settings
 from src.datasets.loader import EvalTestCase, OrchestrateResponse
 from src.evaluators.base import BaseEvaluator, EvalResult
 
@@ -59,7 +59,7 @@ class EvalRun(BaseModel):
 
 
 async def call_orchestrator(
-    test_case: TestCase, target_url: str, timeout: int
+    test_case: EvalTestCase, target_url: str, timeout: int
 ) -> OrchestrateResponse:
     """Send a test case to the orchestrator and return the parsed response."""
     async with httpx.AsyncClient(timeout=timeout) as client:
@@ -88,7 +88,7 @@ async def call_orchestrator(
 
 
 async def run_sequential(
-    test_cases: list[TestCase],
+    test_cases: list[EvalTestCase],
     evaluators: list[BaseEvaluator],
     target_url: str = "",
     dataset_name: str = "",

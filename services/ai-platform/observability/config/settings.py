@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     service_name: str = "ai-platform"
     metrics_enabled: bool = True

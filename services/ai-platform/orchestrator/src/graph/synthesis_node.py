@@ -49,7 +49,6 @@ def _fix_markdown_tables(text: str) -> str:
     lines = text.split("\n")
     fixed: list[str] = []
     in_table = False
-    header_seen = False
     separator_added = False
 
     for i, line in enumerate(lines):
@@ -61,7 +60,6 @@ def _fix_markdown_tables(text: str) -> str:
             if not in_table:
                 # First table row = header
                 in_table = True
-                header_seen = True
                 separator_added = False
                 fixed.append(line)
                 # Count columns for separator
@@ -80,7 +78,6 @@ def _fix_markdown_tables(text: str) -> str:
             # Skip extra separators between data rows
         else:
             in_table = False
-            header_seen = False
             separator_added = False
             fixed.append(line)
 

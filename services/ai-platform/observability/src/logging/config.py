@@ -1,6 +1,8 @@
 import logging
 import sys
+
 from pythonjsonlogger import jsonlogger
+
 
 def configure_logging(service_name: str, level: str = "INFO"):
     """Configure structured JSON logging for CloudWatch compatibility."""

@@ -30,6 +30,7 @@ audit.log
 tasks/
 .claude/
 CLAUDE.md
+PERSONAL_GUIDE.md
 
 # OS
 Thumbs.db

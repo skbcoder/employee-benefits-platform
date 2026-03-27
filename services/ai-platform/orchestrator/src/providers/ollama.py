@@ -6,8 +6,8 @@ import logging
 from typing import Any
 
 import ollama as ollama_lib
-
 from config.settings import settings
+
 from src.models.state import TokenUsage
 from src.providers.base import LLMProvider, LLMResponse
 

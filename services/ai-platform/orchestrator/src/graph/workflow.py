@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from langgraph.graph import END, StateGraph
 
-from src.graph.state import AgentState
-from src.graph.router_node import router_node
-from src.graph.enrollment_node import enrollment_node
 from src.graph.advisor_node import advisor_node
 from src.graph.compliance_node import compliance_node
-from src.graph.synthesis_node import synthesis_node
+from src.graph.enrollment_node import enrollment_node
 from src.graph.escalation_node import escalation_node
+from src.graph.router_node import router_node
+from src.graph.state import AgentState
+from src.graph.synthesis_node import synthesis_node
 from src.models.state import AgentType
 
 logger = logging.getLogger(__name__)

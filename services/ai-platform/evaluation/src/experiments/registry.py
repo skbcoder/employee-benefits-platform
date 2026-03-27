@@ -1,6 +1,5 @@
-from pydantic import BaseModel, Field
-
 from config.settings import settings
+from pydantic import BaseModel, Field
 
 
 class Experiment(BaseModel):

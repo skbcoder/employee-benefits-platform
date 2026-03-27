@@ -1,11 +1,9 @@
 """Ollama SDK wrapper for chat completions."""
 
-import json
 import logging
 from typing import Any
 
 import ollama
-
 from config.settings import settings
 
 logger = logging.getLogger(__name__)

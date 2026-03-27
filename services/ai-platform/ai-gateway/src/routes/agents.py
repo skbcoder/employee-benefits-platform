@@ -8,7 +8,7 @@ from src.models.agent import (
     ValidationRequest,
     ValidationResult,
 )
-from src.services.agent_loop import run_agent_loop, get_rag_context
+from src.services.agent_loop import get_rag_context, run_agent_loop
 
 router = APIRouter(prefix="/api/ai/agents", tags=["agents"])
 
@@ -22,7 +22,7 @@ async def validate_enrollment(request: ValidationRequest):
     """
     # Get policy context from RAG
     rag_context = await get_rag_context(
-        query=f"eligibility rules enrollment validation policy",
+        query="eligibility rules enrollment validation policy",
         category="policy",
     )
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from config.settings import settings
+
 from src.models.state import TokenUsage
 
 logger = logging.getLogger(__name__)

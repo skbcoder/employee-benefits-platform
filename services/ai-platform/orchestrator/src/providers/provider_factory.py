@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from config.settings import settings
+
 from src.providers.base import LLMProvider
 
 logger = logging.getLogger(__name__)
