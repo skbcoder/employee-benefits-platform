@@ -14,16 +14,22 @@ from src.providers.provider_factory import get_provider
 
 try:
     import importlib.util
+    import sys as _sys
     from pathlib import Path as _Path
-    _spec = importlib.util.spec_from_file_location(
-        "obs_metrics",
-        _Path(__file__).parent.parent.parent.parent / "observability" / "src" / "metrics" / "collector.py",
-    )
-    _mod = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_mod)
+    if "obs_metrics" in _sys.modules:
+        _mod = _sys.modules["obs_metrics"]
+    else:
+        _spec = importlib.util.spec_from_file_location(
+            "obs_metrics",
+            _Path(__file__).parent.parent.parent.parent / "observability" / "src" / "metrics" / "collector.py",
+        )
+        _mod = importlib.util.module_from_spec(_spec)
+        _sys.modules["obs_metrics"] = _mod
+        _spec.loader.exec_module(_mod)
     _observe_rag_search = _mod.observe_rag_search
 except Exception:
-    def _observe_rag_search(service: str, duration: float) -> None: pass
+    def _observe_rag_search(service: str, duration: float) -> None:
+        pass
 
 logger = logging.getLogger(__name__)
 

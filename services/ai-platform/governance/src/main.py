@@ -20,20 +20,28 @@ from pydantic import BaseModel, Field
 # Observability — shared module
 _observability_available = False
 try:
-    _obs_base = Path(__file__).parent.parent.parent / "observability"
-    _spec = importlib.util.spec_from_file_location(
-        "obs_metrics", _obs_base / "src" / "metrics" / "collector.py"
-    )
-    _mod = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_mod)
+    import sys as _sys
+    if "obs_metrics" in _sys.modules:
+        _mod = _sys.modules["obs_metrics"]
+    else:
+        _obs_base = Path(__file__).parent.parent.parent / "observability"
+        _spec = importlib.util.spec_from_file_location(
+            "obs_metrics", _obs_base / "src" / "metrics" / "collector.py"
+        )
+        _mod = importlib.util.module_from_spec(_spec)
+        _sys.modules["obs_metrics"] = _mod
+        _spec.loader.exec_module(_mod)
     MetricsMiddleware = _mod.MetricsMiddleware
     metrics_endpoint = _mod.metrics_endpoint
     _record_governance_decision = _mod.record_governance_decision
     _record_pii_detection = _mod.record_pii_detection
     _observability_available = True
 except Exception:
-    def _record_governance_decision(decision: str) -> None: pass
-    def _record_pii_detection(pii_type: str) -> None: pass
+    def _record_governance_decision(decision: str) -> None:
+        pass
+
+    def _record_pii_detection(pii_type: str) -> None:
+        pass
 
 from contextlib import asynccontextmanager
 

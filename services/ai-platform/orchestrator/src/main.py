@@ -20,12 +20,17 @@ from src.models.state import AgentResult, ComplianceDecision, TokenUsage
 _observability_available = False
 try:
     import importlib.util
-    _obs_base = Path(__file__).parent.parent.parent / "observability"
-    _spec = importlib.util.spec_from_file_location(
-        "obs_metrics", _obs_base / "src" / "metrics" / "collector.py"
-    )
-    _mod = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_mod)
+    import sys as _sys
+    if "obs_metrics" in _sys.modules:
+        _mod = _sys.modules["obs_metrics"]
+    else:
+        _obs_base = Path(__file__).parent.parent.parent / "observability"
+        _spec = importlib.util.spec_from_file_location(
+            "obs_metrics", _obs_base / "src" / "metrics" / "collector.py"
+        )
+        _mod = importlib.util.module_from_spec(_spec)
+        _sys.modules["obs_metrics"] = _mod
+        _spec.loader.exec_module(_mod)
     MetricsMiddleware = _mod.MetricsMiddleware
     metrics_endpoint = _mod.metrics_endpoint
     _observability_available = True

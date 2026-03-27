@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 import httpx
@@ -15,16 +16,22 @@ from src.providers.provider_factory import get_provider
 
 try:
     import importlib.util
+    import sys as _sys
     from pathlib import Path as _Path
-    _spec = importlib.util.spec_from_file_location(
-        "obs_metrics",
-        _Path(__file__).parent.parent.parent.parent / "observability" / "src" / "metrics" / "collector.py",
-    )
-    _mod = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_mod)
+    if "obs_metrics" in _sys.modules:
+        _mod = _sys.modules["obs_metrics"]
+    else:
+        _spec = importlib.util.spec_from_file_location(
+            "obs_metrics",
+            _Path(__file__).parent.parent.parent.parent / "observability" / "src" / "metrics" / "collector.py",
+        )
+        _mod = importlib.util.module_from_spec(_spec)
+        _sys.modules["obs_metrics"] = _mod
+        _spec.loader.exec_module(_mod)
     _record_tool_call = _mod.record_tool_call
 except Exception:
-    def _record_tool_call(name: str) -> None: pass
+    def _record_tool_call(name: str) -> None:
+        pass
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +46,28 @@ _ENROLLMENT_SYSTEM_PROMPT = (
     "2. For enrollment submissions, you need ALL of: employeeId, employeeName, "
     "employeeEmail, and at least one benefit selection (type + plan). Ask for "
     "any missing fields before proceeding.\n"
-    "3. Use check_enrollment_status for the most complete status picture.\n"
-    "4. Available benefit types and their plan tiers:\n"
+    "3. Available benefit types and their plan tiers:\n"
     "   - Medical: basic, silver, gold, platinum\n"
     "   - Dental: basic, premium\n"
     "   - Vision: basic, premium\n"
     "   - Life: basic (employer-paid), supplemental\n"
-    "6. Enrollment statuses: SUBMITTED, PROCESSING, COMPLETED, DISPATCH_FAILED\n"
-    "7. Be concise and present results in Markdown tables when listing multiple items.\n"
-    "8. Never display enrollment UUIDs — show Employee Name, ID, Status, and Plan.\n\n"
+    "4. Enrollment statuses: SUBMITTED, PROCESSING, COMPLETED, DISPATCH_FAILED\n"
+    "5. Be concise and present results in Markdown tables when listing multiple items.\n"
+    "6. Never display enrollment UUIDs — show Employee Name, ID, Status, and Plan.\n\n"
+    "INTERPRETING TOOL RESULTS:\n"
+    "- When submit_enrollment returns data with a status of SUBMITTED, the enrollment "
+    "was SUCCESSFUL. Confirm this to the user: 'Your enrollment has been submitted "
+    "successfully!' Show their name, employee ID, plan, and status.\n"
+    "- SUBMITTED means the enrollment is queued for processing — this is the expected "
+    "initial state. It is NOT an error.\n"
+    "- Only say an enrollment failed if the tool returns an explicit error message.\n\n"
+    "CONTEXT AWARENESS:\n"
+    "- Pay attention to the conversation history. If a user just enrolled and asks "
+    "about 'the enrollment we just did' or 'the new enrollment', use their Employee ID "
+    "from the earlier conversation to look it up via list_enrollments_by_employee_id. "
+    "Do NOT ask them for information they already provided.\n"
+    "- When checking status after a submission, prefer list_enrollments_by_employee_id "
+    "over check_enrollment_status (which requires a UUID the user doesn't have).\n\n"
     "RESPONSE RULES — CRITICAL:\n"
     "- NEVER mention API calls, HTTP errors, status codes, or technical failures "
     "to the user. They do not know or care about APIs.\n"
@@ -57,16 +77,22 @@ _ENROLLMENT_SYSTEM_PROMPT = (
     "- If no data is found, just say so briefly. Do NOT fill the response with "
     "unrelated information like plan tier tables or benefit type lists.\n"
     "- Keep responses short and direct. Answer exactly what was asked.\n"
-    "- When listing enrollment counts, present a simple summary like: "
-    "'Here are the current enrollment counts:\\n\\n| Status | Count |\\n"
-    "| SUBMITTED | 3 |\\n| PROCESSING | 1 |\\n| COMPLETED | 5 |'\n\n"
+    "- NEVER output raw JSON, function call objects, or tool schemas to the user. "
+    "Always use the tool functions to perform actions — never describe the tool call "
+    "as text.\n"
+    "- You can only look up enrollments by employee ID, employee name, or status. "
+    "You CANNOT search by plan type. If the user asks a question you cannot answer "
+    "with your available tools (e.g., 'which employees have medical gold'), say: "
+    "'I can look up enrollments by employee name, employee ID, or status. "
+    "For plan-specific reporting, please contact your HR department.'\n"
+    "- NEVER fabricate data or show empty tables. If you have no data, say so in "
+    "a plain sentence.\n\n"
     "When a user wants to enroll but hasn't given their details, respond with a "
     "helpful message explaining which plans are available and ask for their "
     "Employee ID, full name, and email to proceed.\n\n"
     "When the user provides their details in a follow-up message (e.g., "
     "'T12345, John Smith, john@company.com'), parse the information and call "
-    "the submit_enrollment tool with the extracted data. NEVER print raw JSON "
-    "to the user — always use the tool functions to perform actions."
+    "the submit_enrollment tool with the extracted data."
 )
 
 # MCP tools available to this agent (fetched from MCP server or hardcoded)
@@ -251,7 +277,13 @@ async def _execute_tool(name: str, args: dict[str, Any]) -> str:
                 return json.dumps([])
 
             resp.raise_for_status()
-            return resp.text
+            result_text = resp.text
+
+            # For submit_enrollment success, flag it for short-circuit
+            if name == "submit_enrollment" and resp.status_code in (200, 201, 202):
+                result_text = "__ENROLLMENT_SUCCESS__" + result_text
+
+            return result_text
         except httpx.HTTPStatusError as e:
             logger.warning(f"Tool {name} HTTP {e.response.status_code}: {e.response.text[:200]}")
             # Return user-friendly error — never expose HTTP codes to the LLM
@@ -297,10 +329,23 @@ async def enrollment_node(state: AgentState) -> dict[str, Any]:
             accumulated_usage.add(u.prompt_tokens, u.completion_tokens, u.model)
 
         if not response.tool_calls:
-            # No more tool calls — return the response
+            # Sanitize: if the LLM leaked a raw JSON tool call as text, strip it
+            content = response.content or ""
+            if '{"name":' in content and '"parameters"' in content:
+                # LLM output a tool call as text instead of using function calling
+                logger.warning("Enrollment agent: stripped leaked tool call JSON from response")
+                content = re.sub(
+                    r'\{["\s]*name["\s]*:.*?"parameters".*?\}',
+                    "",
+                    content,
+                    flags=re.DOTALL,
+                ).strip()
+                if not content:
+                    content = "Let me look that up for you."
+
             result = AgentResult(
                 agent=AgentType.ENROLLMENT,
-                response=response.content,
+                response=content,
                 confidence=0.8,
                 tool_calls=tool_calls_made,
             )
@@ -343,8 +388,51 @@ async def enrollment_node(state: AgentState) -> dict[str, Any]:
                     messages.append({"role": "tool", "content": result_text})
                     continue
 
+            # Fix: LLMs sometimes pass selections as a JSON string instead of array
+            if tool_name == "submit_enrollment" and isinstance(tool_args.get("selections"), str):
+                try:
+                    tool_args["selections"] = json.loads(tool_args["selections"])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
             result_text = await _execute_tool(tool_name, tool_args)
             _record_tool_call(tool_name)
+
+            # Short-circuit: if enrollment succeeded, format the response
+            # directly instead of letting the LLM interpret it
+            if result_text.startswith("__ENROLLMENT_SUCCESS__"):
+                raw_json = result_text[len("__ENROLLMENT_SUCCESS__"):]
+                try:
+                    data = json.loads(raw_json)
+                except Exception:
+                    data = {}
+                selections = tool_args.get("selections", [])
+                plan_lines = "\n".join(
+                    f"- **{s.get('type', '').title()}**: {s.get('plan', '').title()}"
+                    for s in selections
+                )
+                success_msg = (
+                    f"Your enrollment has been submitted successfully!\n\n"
+                    f"| Detail | Value |\n"
+                    f"|--------|-------|\n"
+                    f"| **Name** | {data.get('employeeName', tool_args.get('employeeName', ''))} |\n"
+                    f"| **Employee ID** | {data.get('employeeId', tool_args.get('employeeId', ''))} |\n"
+                    f"| **Status** | {data.get('status', 'SUBMITTED')} |\n\n"
+                    f"**Plans enrolled:**\n{plan_lines}\n\n"
+                    f"Your enrollment is now queued for processing."
+                )
+                tool_calls_made.append(ToolCall(
+                    tool_name=tool_name, tool_args=tool_args,
+                    result="Enrollment submitted successfully", success=True,
+                ))
+                result = AgentResult(
+                    agent=AgentType.ENROLLMENT,
+                    response=success_msg,
+                    confidence=0.9,
+                    tool_calls=tool_calls_made,
+                )
+                return {"agent_results": [result], "token_usage": accumulated_usage}
+
             tool_calls_made.append(ToolCall(
                 tool_name=tool_name,
                 tool_args=tool_args,
